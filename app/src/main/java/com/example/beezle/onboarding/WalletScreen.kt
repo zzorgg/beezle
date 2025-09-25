@@ -26,10 +26,12 @@ import com.example.beezle.ui.components.ModernCard
 import com.example.beezle.ui.theme.*
 import com.example.beezle.wallet.SolanaWalletManager
 import androidx.activity.ComponentActivity
+import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
 @Composable
 fun WalletScreen(
-    onWalletConnected: () -> Unit = {}
+    onWalletConnected: () -> Unit = {},
+    sender: ActivityResultSender
 ) {
     val walletManager: SolanaWalletManager = viewModel()
     val walletState by walletManager.walletState.collectAsState()
@@ -164,7 +166,7 @@ fun WalletScreen(
                         // Connect Existing Wallet Card
                         ModernCard(
                             onClick = {
-                                walletManager.connectWallet(context as ComponentActivity)
+                                walletManager.connectWallet(sender)
                             }
                         ) {
                             Row(
@@ -209,7 +211,7 @@ fun WalletScreen(
                         // Sign In with Solana Card
                         ModernCard(
                             onClick = {
-                                walletManager.signInWithSolana(context as ComponentActivity)
+                                walletManager.signInWithSolana(sender)
                             }
                         ) {
                             Row(
@@ -327,7 +329,7 @@ fun WalletScreen(
 
                     OutlinedButton(
                         onClick = {
-                            walletManager.disconnectWallet(context as ComponentActivity)
+                            walletManager.disconnectWallet(sender)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.outlinedButtonColors(
@@ -340,7 +342,7 @@ fun WalletScreen(
                     GradientButton(
                         text = if (walletState.isLoading) "Connecting..." else "Connect Wallet",
                         onClick = {
-                            walletManager.connectWallet(context as ComponentActivity)
+                            walletManager.connectWallet(sender)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         icon = Icons.Default.AccountBalanceWallet,

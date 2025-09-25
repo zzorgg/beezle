@@ -2,11 +2,10 @@ package com.example.beezle.wallet
 
 import android.net.Uri
 import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.solana.mobilewalletadapter.clientlib.*
-import com.solana.mobilewalletadapter.clientlib.signin.SolanaSignInPayload
+import com.solana.mobilewalletadapter.common.signin.SignInWithSolana
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,18 +36,21 @@ class SolanaWalletManager : ViewModel() {
         initializeWalletAdapter()
     }
 
+    // SolanaWalletManager.kt
+
     private fun initializeWalletAdapter() {
         try {
             // Define dApp's identity metadata for Android app
-            val solanaUri = Uri.parse("https://solana.com") // Generic Solana URL since this is an Android app
-            val iconUri = Uri.parse("android-asset://ic_launcher.png") // Reference to your app icon
+            val solanaUri = Uri.parse("https://solana.com")
+            val iconUri = Uri.parse("/ic_launcher.png") // Changed to relative URI
             val identityName = "Beezle - Solana Dueling Game"
 
             // Construct the MWA client
             walletAdapter = MobileWalletAdapter(
+                // CORRECTED: Use named parameters to ensure the URI is passed correctly
                 connectionIdentity = ConnectionIdentity(
                     identityUri = solanaUri,
-                    iconUri = iconUri,
+                    iconUri = iconUri, // Explicitly use the 'iconUri' parameter for absolute URIs
                     identityName = identityName
                 )
             )
@@ -61,14 +63,13 @@ class SolanaWalletManager : ViewModel() {
         }
     }
 
-    fun connectWallet(activity: ComponentActivity) {
+    fun connectWallet(sender: ActivityResultSender) {
         viewModelScope.launch {
             Log.d(TAG, "Starting wallet connection...")
             _walletState.value = _walletState.value.copy(isLoading = true, error = null)
 
             try {
-                val sender = ActivityResultSender(activity)
-                Log.d(TAG, "Created ActivityResultSender, calling connect...")
+                Log.d(TAG, "Created , calling connect...")
 
                 val result = walletAdapter.connect(sender)
                 Log.d(TAG, "Connect result received: ${result::class.simpleName}")
@@ -129,18 +130,17 @@ class SolanaWalletManager : ViewModel() {
         }
     }
 
-    fun signInWithSolana(activity: ComponentActivity) {
+    fun signInWithSolana(sender: ActivityResultSender) {
         viewModelScope.launch {
             Log.d(TAG, "Starting Sign In with Solana...")
             _walletState.value = _walletState.value.copy(isLoading = true, error = null)
 
             try {
-                val sender = ActivityResultSender(activity)
                 val result = walletAdapter.signIn(
                     sender,
-                    SolanaSignInPayload(
-                        domain = "solana.com",
-                        statement = "Sign in to Beezle - Your Solana Dueling Game"
+                    SignInWithSolana.Payload(
+                        "solana.com",
+                        "Sign in to Beezle - Your Solana Dueling Game"
                     )
                 )
 
@@ -195,11 +195,10 @@ class SolanaWalletManager : ViewModel() {
         }
     }
 
-    fun disconnectWallet(activity: ComponentActivity) {
+    fun disconnectWallet(sender: ActivityResultSender) {
         viewModelScope.launch {
             try {
                 Log.d(TAG, "Disconnecting wallet...")
-                val sender = ActivityResultSender(activity)
                 walletAdapter.disconnect(sender)
 
                 _walletState.value = WalletState() // Reset to initial state
@@ -213,7 +212,7 @@ class SolanaWalletManager : ViewModel() {
         }
     }
 
-    fun signMessage(activity: ComponentActivity, message: String) {
+    fun signMessage(sender: ActivityResultSender, message: String) {
         if (!_walletState.value.isConnected) {
             _walletState.value = _walletState.value.copy(
                 error = "Please connect your wallet first"
@@ -226,7 +225,6 @@ class SolanaWalletManager : ViewModel() {
             _walletState.value = _walletState.value.copy(isLoading = true, error = null)
 
             try {
-                val sender = ActivityResultSender(activity)
                 val result = walletAdapter.transact(sender) { authResult ->
                     signMessagesDetached(
                         arrayOf(message.toByteArray()),

@@ -2,6 +2,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.devtools.ksp")
+    // Keep this at last (https://stackoverflow.com/questions/70550883/warning-the-following-options-were-not-recognized-by-any-processor-dagger-f)
+    id("kotlin-kapt")
 }
 
 android {
@@ -55,10 +58,10 @@ dependencies {
     implementation("androidx.compose.ui:ui-text-google-fonts")
 
     // Material Components for Android (provides Theme.Material3.* XML themes)
-    implementation("com.google.android.material:material:1.12.0")
+    implementation("com.google.android.material:material:1.13.0")
 
-    implementation("androidx.navigation:navigation-compose:2.7.7")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.navigation:navigation-compose:2.9.5")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -68,23 +71,23 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // Lottie animations
-    implementation("com.airbnb.android:lottie-compose:6.1.0")
+    implementation("com.airbnb.android:lottie-compose:6.6.9")
 
     // Coil for image loading
-    implementation("io.coil-kt:coil-compose:2.4.0")
-    implementation("io.coil-kt:coil-gif:2.4.0")
+    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("io.coil-kt:coil-gif:2.7.0")
     implementation("io.coil-kt:coil-svg:2.4.0")
 
     // Solana Mobile Stack dependencies - Simplified approach
     implementation("com.solanamobile:mobile-wallet-adapter-clientlib-ktx:2.1.0")
 
     // Basic encoders for Solana addresses
-    implementation("org.bitcoinj:bitcoinj-core:0.16.1")
+    implementation("org.bitcoinj:bitcoinj-core:0.17")
 
     // Additional coroutines support for async operations
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
     // Additional UI enhancements
-    implementation("androidx.compose.animation:animation:1.5.4")
-    implementation("androidx.compose.animation:animation-graphics:1.5.4")
+    implementation("androidx.compose.animation:animation:1.9.2")
+    implementation("androidx.compose.animation:animation-graphics:1.9.2")
 }

@@ -14,10 +14,14 @@ import com.example.beezle.onboarding.OnboardingScreen
 import com.example.beezle.onboarding.SplashScreen
 import com.example.beezle.onboarding.WalletScreen
 import com.example.beezle.ui.theme.BeezleTheme
+import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
 class MainActivity : ComponentActivity() {
+    private lateinit var sender : ActivityResultSender
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        sender = ActivityResultSender(this)
         enableEdgeToEdge()
         setContent {
             BeezleTheme {
@@ -47,11 +51,12 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("main") {
                                     popUpTo("wallet") { inclusive = true }
                                 }
-                            }
+                            },
+                            sender = sender,
                         )
                     }
                     composable("main") {
-                        MainAppScreen()
+                        MainAppScreen(sender)
                     }
                 }
             }

@@ -1,27 +1,55 @@
 package com.example.beezle
 
-import androidx.compose.foundation.layout.*
+    import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.beezle.ui.theme.*
+import com.example.beezle.ui.theme.AccentGreen
+import com.example.beezle.ui.theme.BackgroundDark
+import com.example.beezle.ui.theme.PrimaryBlue
+import com.example.beezle.ui.theme.SurfaceDark
+import com.example.beezle.ui.theme.TextPrimary
+import com.example.beezle.ui.theme.TextSecondary
 import com.example.beezle.wallet.SolanaWalletManager
-import androidx.activity.ComponentActivity
+import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainAppScreen() {
+fun MainAppScreen(sender: ActivityResultSender) {
     val walletManager: SolanaWalletManager = viewModel()
     val walletState by walletManager.walletState.collectAsState()
-    val context = LocalContext.current
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -50,9 +78,9 @@ fun MainAppScreen() {
                 IconButton(
                     onClick = {
                         if (walletState.isConnected) {
-                            walletManager.disconnectWallet(context as ComponentActivity)
+                            walletManager.disconnectWallet(sender)
                         } else {
-                            walletManager.connectWallet(context as ComponentActivity)
+                            walletManager.connectWallet(sender)
                         }
                     }
                 ) {
@@ -132,9 +160,9 @@ fun MainAppScreen() {
             Button(
                 onClick = {
                     if (walletState.isConnected) {
-                        walletManager.disconnectWallet(context as ComponentActivity)
+                        walletManager.disconnectWallet(sender)
                     } else {
-                        walletManager.connectWallet(context as ComponentActivity)
+                        walletManager.connectWallet(sender)
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -200,7 +228,7 @@ fun MainAppScreen() {
                 OutlinedButton(
                     onClick = {
                         walletManager.signMessage(
-                            context as ComponentActivity,
+                            sender,
                             "Hello from Beezle! Testing message signing."
                         )
                     },
