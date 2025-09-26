@@ -168,3 +168,6 @@ Plays quiz → timer runs → scores calculated.
 Winner’s wallet shows +0.01 SOL on Devnet.
 
 Judge clicks “View on Solana Explorer” → sees transaction.
+
+
+api 8.0 minimum oreominSdk 26
