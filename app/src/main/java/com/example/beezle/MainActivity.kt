@@ -13,6 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.beezle.onboarding.OnboardingScreen
 import com.example.beezle.onboarding.SplashScreen
 import com.example.beezle.onboarding.WalletScreen
+import com.example.beezle.profile.ProfileScreen
 import com.example.beezle.ui.theme.BeezleTheme
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
@@ -56,7 +57,13 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("main") {
-                        MainAppScreen(sender)
+                        MainAppScreen(sender, navController)
+                    }
+                    composable("profile") {
+                        ProfileScreen(navController)
+                    }
+                    composable("duels") {
+                        com.example.beezle.duel.DuelsScreen(navController)
                     }
                 }
             }

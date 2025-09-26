@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "615731667669",
+    "project_id": "beezle-dc29c",
+    "storage_bucket": "beezle-dc29c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:615731667669:android:e944f3864545a16706785c",
+        "android_client_info": {
+          "package_name": "com.example.beezle"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwId2u-2QPPvvVnBCh-M9vnQaPu2-qCdg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

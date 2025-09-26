@@ -3,8 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp")
-    // Keep this at last (https://stackoverflow.com/questions/70550883/warning-the-following-options-were-not-recognized-by-any-processor-dagger-f)
     id("kotlin-kapt")
+    id("com.google.gms.google-services") // Firebase
 }
 
 android {
@@ -40,6 +40,11 @@ android {
     buildFeatures {
         compose = true
     }
+}
+
+// Remove aggressive resolutionStrategy; only exclude legacy protolite to avoid duplicate descriptor classes.
+configurations.all {
+    exclude(group = "com.google.firebase", module = "protolite-well-known-types")
 }
 
 dependencies {
@@ -90,4 +95,12 @@ dependencies {
     // Additional UI enhancements
     implementation("androidx.compose.animation:animation:1.9.2")
     implementation("androidx.compose.animation:animation-graphics:1.9.2")
+
+    // DataStore for persisting wallet connection
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Firebase Firestore (explicit version to avoid empty version resolution issue with BOM)
+    implementation("com.google.firebase:firebase-firestore-ktx:25.0.0") {
+        exclude(group = "com.google.firebase", module = "protolite-well-known-types")
+    }
 }
