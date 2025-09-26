@@ -158,12 +158,12 @@ class SolanaWalletManager(application: Application) : AndroidViewModel(applicati
             val iconUri = try {
                 val type = res.getResourceTypeName(iconResId)
                 val name = res.getResourceEntryName(iconResId)
-                // android.resource://<package>/<type>/<name>
-                Uri.parse("android.resource://${app.packageName}/$type/$name")
+                // /<type>/<name>
+                Uri.parse("/$type/$name")
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to build android.resource icon URI, falling back to resource ID format", e)
                 // Fallback: use resource ID format which is also relative
-                Uri.parse("android.resource://${app.packageName}/${iconResId}")
+                Uri.parse("/${iconResId}")
             }
             Log.d(TAG, "Built icon URI: $iconUri (scheme: ${iconUri.scheme}, isAbsolute: ${iconUri.isAbsolute})")
 

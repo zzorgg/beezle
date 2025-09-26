@@ -20,7 +20,7 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private lateinit var sender : ActivityResultSender
+    private lateinit var sender: ActivityResultSender
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,7 +35,12 @@ class MainActivity : ComponentActivity() {
 
                 NavHost(
                     navController = navController,
-                    startDestination = if (localData.hasOnboarded) {if (localData.hasConnectedWallet) "main" else "wallet"} else if (isSplashFinished) "onboarding" else "splash"
+                    startDestination =
+                        if (isSplashFinished)
+                            if (localData.hasOnboarded)
+                                if (localData.hasConnectedWallet) "main" else "wallet"
+                            else "onboarding"
+                        else "splash"
                 ) {
                     composable("splash") {
                         SplashScreen(onFinished = {
