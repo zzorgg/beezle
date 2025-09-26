@@ -16,7 +16,9 @@ import com.example.beezle.onboarding.WalletScreen
 import com.example.beezle.profile.ProfileScreen
 import com.example.beezle.ui.theme.BeezleTheme
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private lateinit var sender : ActivityResultSender
 
@@ -29,10 +31,11 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val mainViewModel: MainViewModel = viewModel()
                 val isSplashFinished by mainViewModel.isSplashFinished.collectAsState()
+                val localData by mainViewModel.localData.collectAsState()
 
                 NavHost(
                     navController = navController,
-                    startDestination = if (isSplashFinished) "onboarding" else "splash"
+                    startDestination = if (localData.hasOnboarded) {if (localData.hasConnectedWallet) "main" else "wallet"} else if (isSplashFinished) "onboarding" else "splash"
                 ) {
                     composable("splash") {
                         SplashScreen(onFinished = {
@@ -43,7 +46,10 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("onboarding") {
                         OnboardingScreen(onGetStarted = {
-                            navController.navigate("wallet")
+                            navController.navigate("wallet") {
+                                popUpTo("onboarding") { inclusive = true }
+                            }
+                            mainViewModel.finishOnBoarding()
                         })
                     }
                     composable("wallet") {
@@ -52,6 +58,7 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("main") {
                                     popUpTo("wallet") { inclusive = true }
                                 }
+                                mainViewModel.connectedWallet()
                             },
                             sender = sender,
                         )

@@ -12,17 +12,42 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(onFinished: () -> Unit) {
-    // Lottie animation state with slower speed
-    val composition by rememberLottieComposition(LottieCompositionSpec.Asset("Beezle_Logo.json"))
-    val progress by animateLottieCompositionAsState(
-        composition = composition,
-        iterations = LottieConstants.IterateForever,
-        speed = 0.3f // Slower animation speed
+    var showLogo by remember { mutableStateOf(true) }
+    var showBackground by remember { mutableStateOf(false) }
+
+    // Beezle Logo animation
+    val logoComposition by rememberLottieComposition(
+        LottieCompositionSpec.Asset("Beezle_Logo.json")
+    )
+    val logoProgress by animateLottieCompositionAsState(
+        composition = logoComposition,
+        iterations = 1,
+        speed = 0.6f, // Slightly faster for better performance
+        isPlaying = showLogo
     )
 
-    LaunchedEffect(key1 = true) {
-        delay(5000) // Show logo for 3 seconds
-        onFinished()
+    // Background animation (Bg.json) - only load when needed
+    val bgComposition by rememberLottieComposition(
+        LottieCompositionSpec.Asset("Bg.json")
+    )
+    val bgProgress by animateLottieCompositionAsState(
+        composition = bgComposition,
+        iterations = LottieConstants.IterateForever,
+        speed = 0.8f, // Faster speed for smoother animation
+        isPlaying = showBackground
+    )
+
+    // Handle animation sequencing with better timing
+    LaunchedEffect(logoProgress) {
+        // Start background animation when logo is 30% complete to reduce initial load
+        if (logoProgress >= 0.3f && !showBackground) {
+            showBackground = true
+        }
+
+        if (logoProgress == 1f && showLogo) {
+            delay(2000) // Reduced delay for better user experience
+            onFinished()
+        }
     }
 
     Box(
@@ -31,11 +56,22 @@ fun SplashScreen(onFinished: () -> Unit) {
             .background(BackgroundDark),
         contentAlignment = Alignment.Center
     ) {
-        // Only the Lottie logo animation - no additional animations
-        LottieAnimation(
-            composition = composition,
-            progress = { progress },
-            modifier = Modifier.size(500.dp)
-        )
+        // Background animation (Bg.json) - only render when needed
+        if (showBackground) {
+            LottieAnimation(
+                composition = bgComposition,
+                progress = { bgProgress },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        // Logo animation (Beezle_Logo) - centered on top of background
+        if (showLogo) {
+            LottieAnimation(
+                composition = logoComposition,
+                progress = { logoProgress },
+                modifier = Modifier.size(3000.dp)
+            )
+        }
     }
 }

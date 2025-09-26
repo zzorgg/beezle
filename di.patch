@@ -1,0 +1,323 @@
+Subject: [PATCH] Added dependency injection, and local data store and tracked on boarding
+---
+Index: app/src/main/java/com/example/beezle/MainApplication.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/beezle/MainApplication.kt b/app/src/main/java/com/example/beezle/MainApplication.kt
+new file mode 100644
+--- /dev/null	(date 1758909340772)
++++ b/app/src/main/java/com/example/beezle/MainApplication.kt	(date 1758909340772)
+@@ -0,0 +1,8 @@
++package com.example.beezle
++
++import android.app.Application
++import dagger.hilt.android.HiltAndroidApp
++
++@HiltAndroidApp
++class MainApplication : Application(){
++}
+\ No newline at end of file
+Index: build.gradle.kts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/build.gradle.kts b/build.gradle.kts
+--- a/build.gradle.kts	(revision 83c480264ce8e1ea66c56e43ef4232a675415f8d)
++++ b/build.gradle.kts	(date 1758909393015)
+@@ -6,4 +6,5 @@
+     // https://github.com/google/ksp/releases
+     id("com.google.devtools.ksp") version "2.2.10-2.0.2" apply false
+     id("com.google.gms.google-services") version "4.4.3" apply false
++    id("com.google.dagger.hilt.android") version "2.57.1" apply false
+ }
+\ No newline at end of file
+Index: app/src/main/java/com/example/beezle/di/AppModule.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/beezle/di/AppModule.kt b/app/src/main/java/com/example/beezle/di/AppModule.kt
+new file mode 100644
+--- /dev/null	(date 1758909340772)
++++ b/app/src/main/java/com/example/beezle/di/AppModule.kt	(date 1758909340772)
+@@ -0,0 +1,35 @@
++package com.example.beezle.di
++
++import android.content.Context
++import androidx.datastore.core.DataStore
++import androidx.datastore.preferences.core.Preferences
++import androidx.datastore.preferences.preferencesDataStore
++import com.example.beezle.data.local.LocalDataStoreRepository
++import dagger.Module
++import dagger.Provides
++import dagger.hilt.InstallIn
++import dagger.hilt.android.qualifiers.ApplicationContext
++import dagger.hilt.components.SingletonComponent
++import javax.inject.Singleton
++
++
++private const val DATASTORE_NAME = "breeze_data_store"
++private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
++    name = DATASTORE_NAME
++)
++
++@Module
++@InstallIn(SingletonComponent::class)
++class AppModule {
++//    @Provides
++//    @Singleton
++//    fun provideBookmarkDao(@ApplicationContext context: Context): BookmarkDao {
++//        return MainDatabase.getDatabase(context).bookmarkDao()
++//    }
++
++    @Provides
++    @Singleton
++    fun provideLocalDatastoreRepository(@ApplicationContext context: Context): LocalDataStoreRepository {
++        return LocalDataStoreRepository(context.dataStore)
++    }
++}
+\ No newline at end of file
+Index: app/src/main/java/com/example/beezle/data/local/LocalDataStoreRepository.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/beezle/data/local/LocalDataStoreRepository.kt b/app/src/main/java/com/example/beezle/data/local/LocalDataStoreRepository.kt
+new file mode 100644
+--- /dev/null	(date 1758909340772)
++++ b/app/src/main/java/com/example/beezle/data/local/LocalDataStoreRepository.kt	(date 1758909340772)
+@@ -0,0 +1,52 @@
++package com.example.beezle.data.local
++
++import androidx.datastore.core.DataStore
++import androidx.datastore.preferences.core.Preferences
++import androidx.datastore.preferences.core.booleanPreferencesKey
++import androidx.datastore.preferences.core.edit
++import androidx.datastore.preferences.core.emptyPreferences
++import kotlinx.coroutines.flow.Flow
++import kotlinx.coroutines.flow.catch
++import kotlinx.coroutines.flow.first
++import kotlinx.coroutines.flow.map
++import java.io.IOException
++
++data class LocalData(
++    val hasOnboarded: Boolean = false,
++    val hasConnectedWallet: Boolean = false,
++)
++
++class LocalDataStoreRepository(private val dataStore: DataStore<Preferences>) {
++    private companion object {
++        val HAS_ONBOARDED = booleanPreferencesKey("has_user_onboarded")
++        val HAS_CONNECTED_WALLET = booleanPreferencesKey("has_user_connected_wallet")
++    }
++
++    val localData: Flow<LocalData> = dataStore.data
++        .catch {
++            if (it is IOException) {
++                emit(emptyPreferences())
++            } else {
++                throw it
++            }
++        }
++        .map {
++            LocalData(
++                hasOnboarded = it[HAS_ONBOARDED] ?: false,
++                hasConnectedWallet = it[HAS_CONNECTED_WALLET] ?: false,
++            )
++        }
++
++    // Can be used in view models
++    suspend fun hasUserOnBoardedSnapshot(): Boolean = dataStore.data.first()[HAS_ONBOARDED] ?: false
++
++    // Can be used in view models
++    suspend fun hasUserConnectedWalletSnapshot(): Boolean = dataStore.data.first()[HAS_CONNECTED_WALLET] ?: false
++
++    suspend fun update(data: LocalData) {
++        dataStore.edit {
++            it[HAS_ONBOARDED] = data.hasOnboarded
++            it[HAS_CONNECTED_WALLET] = data.hasConnectedWallet
++        }
++    }
++}
+\ No newline at end of file
+Index: app/src/main/java/com/example/beezle/MainActivity.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/beezle/MainActivity.kt b/app/src/main/java/com/example/beezle/MainActivity.kt
+--- a/app/src/main/java/com/example/beezle/MainActivity.kt	(revision 83c480264ce8e1ea66c56e43ef4232a675415f8d)
++++ b/app/src/main/java/com/example/beezle/MainActivity.kt	(date 1758909340771)
+@@ -16,7 +16,9 @@
+ import com.example.beezle.profile.ProfileScreen
+ import com.example.beezle.ui.theme.BeezleTheme
+ import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
++import dagger.hilt.android.AndroidEntryPoint
+ 
++@AndroidEntryPoint
+ class MainActivity : ComponentActivity() {
+     private lateinit var sender : ActivityResultSender
+ 
+@@ -29,10 +31,11 @@
+                 val navController = rememberNavController()
+                 val mainViewModel: MainViewModel = viewModel()
+                 val isSplashFinished by mainViewModel.isSplashFinished.collectAsState()
++                val localData by mainViewModel.localData.collectAsState()
+ 
+                 NavHost(
+                     navController = navController,
+-                    startDestination = if (isSplashFinished) "onboarding" else "splash"
++                    startDestination = if (localData.hasOnboarded) {if (localData.hasConnectedWallet) "main" else "wallet"} else if (isSplashFinished) "onboarding" else "splash"
+                 ) {
+                     composable("splash") {
+                         SplashScreen(onFinished = {
+@@ -43,7 +46,10 @@
+                     }
+                     composable("onboarding") {
+                         OnboardingScreen(onGetStarted = {
+-                            navController.navigate("wallet")
++                            navController.navigate("wallet") {
++                                popUpTo("onboarding") { inclusive = true }
++                            }
++                            mainViewModel.finishOnBoarding()
+                         })
+                     }
+                     composable("wallet") {
+@@ -52,6 +58,7 @@
+                                 navController.navigate("main") {
+                                     popUpTo("wallet") { inclusive = true }
+                                 }
++                                mainViewModel.connectedWallet()
+                             },
+                             sender = sender,
+                         )
+Index: app/src/main/AndroidManifest.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/AndroidManifest.xml b/app/src/main/AndroidManifest.xml
+--- a/app/src/main/AndroidManifest.xml	(revision 83c480264ce8e1ea66c56e43ef4232a675415f8d)
++++ b/app/src/main/AndroidManifest.xml	(date 1758909340771)
+@@ -13,6 +13,7 @@
+     </queries>
+ 
+     <application
++        android:name="com.example.beezle.MainApplication"
+         android:allowBackup="true"
+         android:dataExtractionRules="@xml/data_extraction_rules"
+         android:fullBackupContent="@xml/backup_rules"
+@@ -29,7 +30,6 @@
+             android:launchMode="singleTask">
+             <intent-filter>
+                 <action android:name="android.intent.action.MAIN" />
+-
+                 <category android:name="android.intent.category.LAUNCHER" />
+             </intent-filter>
+         </activity>
+Index: app/build.gradle.kts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+--- a/app/build.gradle.kts	(revision 83c480264ce8e1ea66c56e43ef4232a675415f8d)
++++ b/app/build.gradle.kts	(date 1758909422372)
+@@ -3,6 +3,8 @@
+     alias(libs.plugins.kotlin.android)
+     alias(libs.plugins.kotlin.compose)
+     id("com.google.devtools.ksp")
++    id("com.google.dagger.hilt.android")
++    // Keep this at last (https://stackoverflow.com/questions/70550883/warning-the-following-options-were-not-recognized-by-any-processor-dagger-f)
+     id("kotlin-kapt")
+     id("com.google.gms.google-services") // Firebase
+ }
+@@ -42,11 +44,6 @@
+     }
+ }
+ 
+-// Remove aggressive resolutionStrategy; only exclude legacy protolite to avoid duplicate descriptor classes.
+-configurations.all {
+-    exclude(group = "com.google.firebase", module = "protolite-well-known-types")
+-}
+-
+ dependencies {
+ 
+     implementation(libs.androidx.core.ktx)
+@@ -97,10 +94,13 @@
+     implementation("androidx.compose.animation:animation-graphics:1.9.2")
+ 
+     // DataStore for persisting wallet connection
+-    implementation("androidx.datastore:datastore-preferences:1.1.1")
++    implementation("androidx.datastore:datastore-preferences:1.1.7")
+ 
+     // Firebase Firestore (explicit version to avoid empty version resolution issue with BOM)
+     implementation("com.google.firebase:firebase-firestore-ktx:25.0.0") {
+         exclude(group = "com.google.firebase", module = "protolite-well-known-types")
+     }
++
++    implementation("com.google.dagger:hilt-android:2.57.2")
++    ksp("com.google.dagger:hilt-android-compiler:2.57.2")
+ }
+Index: app/src/main/java/com/example/beezle/MainViewModel.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/beezle/MainViewModel.kt b/app/src/main/java/com/example/beezle/MainViewModel.kt
+--- a/app/src/main/java/com/example/beezle/MainViewModel.kt	(revision 83c480264ce8e1ea66c56e43ef4232a675415f8d)
++++ b/app/src/main/java/com/example/beezle/MainViewModel.kt	(date 1758909340772)
+@@ -2,14 +2,32 @@
+ 
+ import androidx.lifecycle.ViewModel
+ import androidx.lifecycle.viewModelScope
++import com.example.beezle.data.local.LocalData
++import com.example.beezle.data.local.LocalDataStoreRepository
++import dagger.hilt.android.lifecycle.HiltViewModel
++import kotlinx.coroutines.Dispatchers
+ import kotlinx.coroutines.flow.MutableStateFlow
++import kotlinx.coroutines.flow.SharingStarted
++import kotlinx.coroutines.flow.StateFlow
+ import kotlinx.coroutines.flow.asStateFlow
++import kotlinx.coroutines.flow.first
++import kotlinx.coroutines.flow.stateIn
+ import kotlinx.coroutines.launch
++import javax.inject.Inject
+ 
+-class MainViewModel : ViewModel() {
++@HiltViewModel
++class MainViewModel @Inject constructor(
++    private val localDataStoreRepository: LocalDataStoreRepository
++) : ViewModel() {
+     private val _isSplashFinished = MutableStateFlow(false)
+     val isSplashFinished = _isSplashFinished.asStateFlow()
+ 
++    val localData: StateFlow<LocalData> = localDataStoreRepository.localData.stateIn(
++        scope = viewModelScope,
++        started = SharingStarted.WhileSubscribed(5_000),
++        initialValue = LocalData()
++    )
++
+     init {
+         viewModelScope.launch {
+             // Simulate a long-running task
+@@ -17,4 +35,16 @@
+             _isSplashFinished.value = true
+         }
+     }
++
++    fun finishOnBoarding() {
++        viewModelScope.launch(Dispatchers.IO) {
++            localDataStoreRepository.update(localData.first().copy(hasOnboarded = true))
++        }
++    }
++
++    fun connectedWallet() {
++        viewModelScope.launch(Dispatchers.IO) {
++            localDataStoreRepository.update(localData.first().copy(hasConnectedWallet = true))
++        }
++    }
+ }

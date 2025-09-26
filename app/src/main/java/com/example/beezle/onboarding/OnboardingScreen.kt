@@ -122,8 +122,9 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                     horizontalArrangement = if (pagerState.currentPage < 2) {
                         Arrangement.SpaceBetween
                     } else {
-                        Arrangement.Center
-                    }
+                        Arrangement.SpaceBetween // Keep consistent arrangement
+                    },
+                    verticalAlignment = Alignment.CenterVertically // Add vertical alignment
                 ) {
                     if (pagerState.currentPage < 2) {
                         // Skip Button
@@ -150,12 +151,18 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                             icon = Icons.AutoMirrored.Filled.ArrowForward
                         )
                     } else {
-                        // Get Started Button
+                        // Empty spacer to maintain alignment
+                        Spacer(modifier = Modifier.width(1.dp))
+
+                        // Get Started Button - centered but with proper width
                         GradientButton(
                             text = "Get Started",
                             onClick = onGetStarted,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.width(200.dp) // Fixed width instead of fillMaxWidth
                         )
+
+                        // Empty spacer to maintain alignment
+                        Spacer(modifier = Modifier.width(1.dp))
                     }
                 }
             }
