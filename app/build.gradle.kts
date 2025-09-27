@@ -44,6 +44,14 @@ android {
     }
 }
 
+// Exclude legacy protolite that collides with newer protobuf-javalite (duplicate DescriptorProtos classes)
+configurations.all {
+    exclude(group = "com.google.firebase", module = "protolite-well-known-types")
+    resolutionStrategy {
+        force("com.google.protobuf:protobuf-javalite:4.29.3")
+    }
+}
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -64,6 +72,7 @@ dependencies {
 
     implementation("androidx.navigation:navigation-compose:2.9.5")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -88,6 +97,7 @@ dependencies {
 
     // Additional coroutines support for async operations
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
 
     // Additional UI enhancements
     implementation("androidx.compose.animation:animation:1.9.2")
@@ -96,11 +106,18 @@ dependencies {
     // DataStore for persisting wallet connection
     implementation("androidx.datastore:datastore-preferences:1.1.7")
 
-    // Firebase Firestore (explicit version to avoid empty version resolution issue with BOM)
-    implementation("com.google.firebase:firebase-firestore-ktx:25.0.0") {
+    // Hilt navigation for Compose
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+    // Firebase BOM to manage versions
+    implementation(platform("com.google.firebase:firebase-bom:33.4.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx") {
         exclude(group = "com.google.firebase", module = "protolite-well-known-types")
-    }
+    } // now using BOM version
+    implementation("com.google.android.gms:play-services-auth:21.2.0") // Google Sign-In
 
     implementation("com.google.dagger:hilt-android:2.57.2")
     ksp("com.google.dagger:hilt-android-compiler:2.57.2")
+    implementation("com.google.protobuf:protobuf-javalite:4.29.3")
 }

@@ -5,6 +5,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.beezle.data.local.LocalDataStoreRepository
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,15 +23,18 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
 @Module
 @InstallIn(SingletonComponent::class)
 class AppModule {
-//    @Provides
-//    @Singleton
-//    fun provideBookmarkDao(@ApplicationContext context: Context): BookmarkDao {
-//        return MainDatabase.getDatabase(context).bookmarkDao()
-//    }
 
     @Provides
     @Singleton
     fun provideLocalDatastoreRepository(@ApplicationContext context: Context): LocalDataStoreRepository {
         return LocalDataStoreRepository(context.dataStore)
     }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
+
+    @Provides
+    @Singleton
+    fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
 }
