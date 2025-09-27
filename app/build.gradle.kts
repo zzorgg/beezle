@@ -119,5 +119,8 @@ dependencies {
 
     implementation("com.google.dagger:hilt-android:2.57.2")
     ksp("com.google.dagger:hilt-android-compiler:2.57.2")
+
+    // Explicit protobuf runtime & common lite protos (provides google.type.LatLng) after excluding protolite
     implementation("com.google.protobuf:protobuf-javalite:4.29.3")
+    implementation("com.google.api.grpc:proto-google-common-protos-lite:2.47.0")
 }
