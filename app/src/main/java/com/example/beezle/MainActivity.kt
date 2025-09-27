@@ -75,7 +75,11 @@ class MainActivity : ComponentActivity() {
                         ProfileScreen(navController)
                     }
                     composable("duels") {
-                        com.example.beezle.duel.DuelsScreen(navController)
+                        com.example.beezle.duel.ui.DuelScreen(
+                            onNavigateBack = {
+                                navController.popBackStack()
+                            }
+                        )
                     }
                 }
             }

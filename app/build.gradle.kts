@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
     // Keep this at last (https://stackoverflow.com/questions/70550883/warning-the-following-options-were-not-recognized-by-any-processor-dagger-f)
     id("kotlin-kapt")
     id("com.google.gms.google-services") // Firebase
@@ -99,6 +100,13 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
 
+    // WebSocket support for duel functionality
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // JSON serialization for WebSocket messages
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+
     // Additional UI enhancements
     implementation("androidx.compose.animation:animation:1.9.2")
     implementation("androidx.compose.animation:animation-graphics:1.9.2")
@@ -122,5 +130,5 @@ dependencies {
 
     // Explicit protobuf runtime & common lite protos (provides google.type.LatLng) after excluding protolite
     implementation("com.google.protobuf:protobuf-javalite:4.29.3")
-    implementation("com.google.api.grpc:proto-google-common-protos-lite:2.47.0")
+    implementation("com.google.api.grpc:proto-google-common-protos:2.17.0")
 }
