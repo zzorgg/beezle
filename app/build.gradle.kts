@@ -122,13 +122,18 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx") {
         exclude(group = "com.google.firebase", module = "protolite-well-known-types")
-    } // now using BOM version
-    implementation("com.google.android.gms:play-services-auth:21.2.0") // Google Sign-In
+    }
+    // Also add the dependencies for the Credential Manager libraries and specify their versions
+    implementation("androidx.credentials:credentials:1.5.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.5.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
     implementation("com.google.dagger:hilt-android:2.57.2")
     ksp("com.google.dagger:hilt-android-compiler:2.57.2")
 
     // Explicit protobuf runtime & common lite protos (provides google.type.LatLng) after excluding protolite
     implementation("com.google.protobuf:protobuf-javalite:4.29.3")
-    implementation("com.google.api.grpc:proto-google-common-protos:2.17.0")
+    implementation("com.google.api.grpc:proto-google-common-protos:2.17.0") {
+        exclude(group = "com.google.protobuf", module = "protobuf-java")
+    }
 }

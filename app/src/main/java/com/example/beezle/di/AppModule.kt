@@ -5,6 +5,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.beezle.data.local.LocalDataStoreRepository
+import com.example.beezle.data.remote.DuelWebSocketService
+import com.example.beezle.data.repository.DuelRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
@@ -37,4 +39,18 @@ class AppModule {
     @Provides
     @Singleton
     fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
+
+    @Provides
+    @Singleton
+    fun provideDuelWebSocketService(): DuelWebSocketService {
+        return DuelWebSocketService()
+    }
+
+    @Provides
+    @Singleton
+    fun provideDuelRepository(
+        webSocketService: DuelWebSocketService
+    ): DuelRepository {
+        return DuelRepository(webSocketService)
+    }
 }
