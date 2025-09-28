@@ -31,6 +31,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // In production you likely want secure wss:// endpoint
+            buildConfigField("String", "WEBSOCKET_URL", "\"wss://your.production.host/ws\"")
+        }
+        debug {
+            // Use emulator host alias instead of localhost
+            buildConfigField("String", "WEBSOCKET_URL", "\"ws://10.0.2.2:8080/ws\"")
         }
     }
     compileOptions {
@@ -42,6 +48,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true // Enable BuildConfig so WEBSOCKET_URL field is generated
     }
 }
 

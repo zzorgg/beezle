@@ -1,6 +1,7 @@
 package com.example.beezle.data.remote
 
 import android.util.Log
+import com.example.beezle.BuildConfig
 import com.example.beezle.data.model.duel.WebSocketMessage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -38,7 +39,8 @@ class DuelWebSocketService @Inject constructor() {
 
     companion object {
         private const val TAG = "DuelWebSocketService"
-        private const val WS_URL = "ws://localhost:8080/ws"
+        // Use value provided via Gradle BuildConfig so it can differ per build type
+        private val WS_URL: String = BuildConfig.WEBSOCKET_URL
     }
 
     fun connect() {
