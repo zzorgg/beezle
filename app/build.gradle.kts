@@ -31,12 +31,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // In production you likely want secure wss:// endpoint
-            buildConfigField("String", "WEBSOCKET_URL", "\"wss://your.production.host/ws\"")
+            // Updated to use your production WebSocket URL
+            buildConfigField("String", "WEBSOCKET_URL", "\"wss://octopus-app-4x8aa.ondigitalocean.app/ws\"")
         }
         debug {
-            // Use emulator host alias instead of localhost
-            buildConfigField("String", "WEBSOCKET_URL", "\"ws://10.0.2.2:8080/ws\"")
+            // Updated to use your production WebSocket URL for development as well
+            buildConfigField("String", "WEBSOCKET_URL", "\"wss://octopus-app-4x8aa.ondigitalocean.app/ws\"")
         }
     }
     compileOptions {

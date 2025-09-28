@@ -359,7 +359,6 @@ private fun WaitingForQuestionScreen(duelState: DuelState) {
             ) {
                 PlayerCard(
                     username = room.player1.username,
-                    score = room.player1Score,
                     isCurrentPlayer = true
                 )
 
@@ -373,7 +372,6 @@ private fun WaitingForQuestionScreen(duelState: DuelState) {
 
                 PlayerCard(
                     username = room.player2?.username ?: "Unknown",
-                    score = room.player2Score,
                     isCurrentPlayer = false
                 )
             }

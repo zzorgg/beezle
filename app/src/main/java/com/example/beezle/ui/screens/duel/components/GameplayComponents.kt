@@ -1,8 +1,8 @@
 package com.example.beezle.ui.screens.duel.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -65,39 +65,10 @@ fun GameplayScreen(
 
 @Composable
 private fun GameHeader(duelState: DuelState) {
-    duelState.currentRoom?.let { room ->
+    duelState.currentRoom?.let { _ ->
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             // Timer
             TimerCircle(timeRemaining = duelState.timeRemaining)
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Score Display
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                PlayerScoreCard(
-                    username = room.player1.username,
-                    score = room.player1Score,
-                    isCurrentPlayer = true
-                )
-
-                Text(
-                    text = "VS",
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFE94560)
-                    )
-                )
-
-                PlayerScoreCard(
-                    username = room.player2?.username ?: "Unknown",
-                    score = room.player2Score,
-                    isCurrentPlayer = false
-                )
-            }
         }
     }
 }
@@ -129,48 +100,6 @@ private fun TimerCircle(timeRemaining: Int) {
                 color = Color.White
             )
         )
-    }
-}
-
-@Composable
-private fun PlayerScoreCard(
-    username: String,
-    score: Int,
-    isCurrentPlayer: Boolean
-) {
-    Card(
-        modifier = Modifier.width(120.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isCurrentPlayer)
-                Color(0xFF1E3A8A).copy(alpha = 0.8f)
-            else
-                Color(0xFF1F2937).copy(alpha = 0.8f)
-        ),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = username,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = Color.White,
-                    fontWeight = FontWeight.Medium
-                ),
-                maxLines = 1
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = score.toString(),
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    color = Color(0xFFE94560),
-                    fontWeight = FontWeight.Bold
-                )
-            )
-        }
     }
 }
 
@@ -289,7 +218,6 @@ private fun AnswerButton(
 @Composable
 fun PlayerCard(
     username: String,
-    score: Int,
     isCurrentPlayer: Boolean
 ) {
     Card(
@@ -340,22 +268,12 @@ fun PlayerCard(
                 maxLines = 1
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "Score: $score",
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = Color(0xFFE94560),
-                    fontWeight = FontWeight.Bold
-                )
-            )
-
             if (isCurrentPlayer) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "You",
                     style = MaterialTheme.typography.bodySmall.copy(
-                        color = Color.Green,
+                        color = Color(0xFF10B981),
                         fontWeight = FontWeight.Bold
                     )
                 )

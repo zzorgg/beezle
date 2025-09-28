@@ -42,7 +42,7 @@ fun RoundResultScreen(
     ) {
         // Round Result Title
         Text(
-            text = if (result.timeUp) "TIME'S UP!" else "ROUND COMPLETE",
+            text = "ROUND COMPLETE",
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -60,8 +60,7 @@ fun RoundResultScreen(
             ) {
                 PlayerResultCard(
                     username = r.player1.username,
-                    score = result.player1Score,
-                    wasCorrect = result.player1Correct,
+                    wasCorrect = result.data.player1_correct,
                     isCurrentPlayer = true
                 )
 
@@ -75,8 +74,7 @@ fun RoundResultScreen(
 
                 PlayerResultCard(
                     username = r.player2?.username ?: "Unknown",
-                    score = result.player2Score,
-                    wasCorrect = result.player2Correct,
+                    wasCorrect = result.data.player2_correct,
                     isCurrentPlayer = false
                 )
             }
@@ -101,7 +99,6 @@ fun RoundResultScreen(
 @Composable
 private fun PlayerResultCard(
     username: String,
-    score: Int,
     wasCorrect: Boolean?,
     isCurrentPlayer: Boolean
 ) {
@@ -166,16 +163,6 @@ private fun PlayerResultCard(
                 maxLines = 1
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "Score: $score",
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = Color(0xFFE94560),
-                    fontWeight = FontWeight.Bold
-                )
-            )
-
             if (isCurrentPlayer) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -197,8 +184,8 @@ fun DuelCompleteScreen(
     onPlayAgain: () -> Unit,
     onExit: () -> Unit
 ) {
-    val isWinner = finalResult.winnerId == currentUserId
-    val isDraw = finalResult.winnerId == null
+    val isWinner = finalResult.data.winner_id == currentUserId
+    val isDraw = finalResult.data.winner_id == null
 
     Column(
         modifier = Modifier
@@ -311,49 +298,13 @@ fun DuelCompleteScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         // Final Scores
-        Card(
-            modifier = Modifier.fillMaxWidth(0.8f),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.Black.copy(alpha = 0.3f)
-            ),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Final Scores",
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                finalResult.finalScores.forEach { (playerId, score) ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = if (playerId == currentUserId) "You" else "Opponent",
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                color = Color.White
-                            )
-                        )
-                        Text(
-                            text = score.toString(),
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                color = Color(0xFFE94560),
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                }
-            }
-        }
+        Text(
+            text = "Match Complete",
+            style = MaterialTheme.typography.headlineSmall.copy(
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+        )
 
         Spacer(modifier = Modifier.height(48.dp))
 

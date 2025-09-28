@@ -30,9 +30,7 @@ class DuelViewModel @Inject constructor(
     fun startDuel(username: String) {
         val user = DuelUser(
             id = generateUserId(),
-            username = username,
-            avatar = null,
-            score = 0
+            username = username
         )
 
         duelRepository.setCurrentUser(user)

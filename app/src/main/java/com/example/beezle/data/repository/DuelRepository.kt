@@ -2,8 +2,11 @@ package com.example.beezle.data.repository
 
 import android.util.Log
 import com.example.beezle.data.model.duel.ConnectionStatus
+import com.example.beezle.data.model.duel.DuelRoom
 import com.example.beezle.data.model.duel.DuelState
+import com.example.beezle.data.model.duel.DuelStatus
 import com.example.beezle.data.model.duel.DuelUser
+import com.example.beezle.data.model.duel.Question
 import com.example.beezle.data.model.duel.WebSocketMessage
 import com.example.beezle.data.remote.DuelWebSocketService
 import kotlinx.coroutines.CoroutineScope
@@ -61,20 +64,54 @@ class DuelRepository @Inject constructor(
 
     private fun handleWebSocketMessage(message: WebSocketMessage) {
         when (message) {
+            is WebSocketMessage.Queued -> {
+                _duelState.value = _duelState.value.copy(
+                    isInQueue = true,
+                    isSearching = true,
+                    error = null
+                )
+            }
+
             is WebSocketMessage.MatchFound -> {
+                // Create a DuelRoom from the match data
+                val player1 = DuelUser(
+                    id = message.data.player_id,
+                    username = currentUser?.username ?: "Player"
+                )
+                val player2 = DuelUser(
+                    id = message.data.opponent_id,
+                    username = message.data.opponent_name
+                )
+
+                val room = DuelRoom(
+                    id = message.data.match_id,
+                    player1 = player1,
+                    player2 = player2,
+                    status = DuelStatus.IN_PROGRESS
+                )
+
                 _duelState.value = _duelState.value.copy(
                     isInQueue = false,
                     isSearching = false,
-                    currentRoom = message.room,
+                    currentRoom = room,
                     error = null
                 )
             }
 
             is WebSocketMessage.QuestionReceived -> {
                 questionStartTime = System.currentTimeMillis()
+
+                val question = Question(
+                    id = message.data.question_id,
+                    text = message.data.question_text,
+                    options = message.data.options,
+                    correctAnswer = 0, // Will be revealed later
+                    timeLimit = message.data.time_limit
+                )
+
                 _duelState.value = _duelState.value.copy(
-                    currentQuestion = message.question,
-                    timeRemaining = message.timeRemaining,
+                    currentQuestion = question,
+                    timeRemaining = message.data.time_limit,
                     selectedAnswer = null,
                     hasAnswered = false,
                     error = null
@@ -90,15 +127,6 @@ class DuelRepository @Inject constructor(
                     currentQuestion = null,
                     timeRemaining = 0
                 )
-
-                // Update room scores if we have a room
-                _duelState.value.currentRoom?.let { room ->
-                    val updatedRoom = room.copy(
-                        player1Score = message.player1Score,
-                        player2Score = message.player2Score
-                    )
-                    _duelState.value = _duelState.value.copy(currentRoom = updatedRoom)
-                }
             }
 
             is WebSocketMessage.DuelComplete -> {
@@ -115,7 +143,7 @@ class DuelRepository @Inject constructor(
 
             is WebSocketMessage.OpponentLeft -> {
                 _duelState.value = _duelState.value.copy(
-                    error = "Opponent left the duel: ${message.reason}",
+                    error = "Opponent left the duel: ${message.data.reason}",
                     currentRoom = null,
                     currentQuestion = null,
                     isInQueue = false,
@@ -125,7 +153,7 @@ class DuelRepository @Inject constructor(
 
             is WebSocketMessage.Error -> {
                 _duelState.value = _duelState.value.copy(
-                    error = message.message,
+                    error = message.data.message,
                     isInQueue = false,
                     isSearching = false
                 )
@@ -182,7 +210,12 @@ class DuelRepository @Inject constructor(
             error = null
         )
 
-        webSocketService.sendMessage(WebSocketMessage.JoinQueue(user))
+        // Send the correct message format that matches the server expectations
+        val joinQueueData = WebSocketMessage.JoinQueueData(
+            player_id = user.id,
+            display_name = user.username
+        )
+        webSocketService.sendMessage(WebSocketMessage.JoinQueue(data = joinQueueData))
     }
 
     fun leaveQueue() {
@@ -201,20 +234,18 @@ class DuelRepository @Inject constructor(
             return
         }
 
-        val isCorrect = answerIndex == question.correctAnswer
-
         _duelState.value = _duelState.value.copy(
             selectedAnswer = answerIndex,
             hasAnswered = true
         )
 
-        webSocketService.sendMessage(
-            WebSocketMessage.AnswerSubmitted(
-                userId = user.id,
-                answer = answerIndex,
-                isCorrect = isCorrect
-            )
+        // Send answer in the correct format
+        val answerData = WebSocketMessage.AnswerData(
+            player_id = user.id,
+            question_id = question.id,
+            answer_index = answerIndex
         )
+        webSocketService.sendMessage(WebSocketMessage.AnswerSubmitted(data = answerData))
     }
 
     fun clearError() {

@@ -5,9 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class DuelUser(
     val id: String,
-    val username: String,
-    val avatar: String? = null,
-    val score: Int = 0
+    val username: String
 )
 
 @Serializable
@@ -18,8 +16,6 @@ data class DuelRoom(
     val status: DuelStatus,
     val currentQuestion: Question? = null,
     val timeRemaining: Int = 15,
-    val player1Score: Int = 0,
-    val player2Score: Int = 0,
     val createdAt: Long = System.currentTimeMillis()
 )
 
@@ -45,40 +41,120 @@ enum class DuelStatus {
 @Serializable
 sealed class WebSocketMessage {
     @Serializable
-    data class JoinQueue(val user: DuelUser) : WebSocketMessage()
-
-    @Serializable
-    data class MatchFound(val room: DuelRoom) : WebSocketMessage()
-
-    @Serializable
-    data class QuestionReceived(val question: Question, val timeRemaining: Int) : WebSocketMessage()
-
-    @Serializable
-    data class AnswerSubmitted(val userId: String, val answer: Int, val isCorrect: Boolean) : WebSocketMessage()
-
-    @Serializable
-    data class RoundResult(
-        val player1Correct: Boolean?,
-        val player2Correct: Boolean?,
-        val player1Score: Int,
-        val player2Score: Int,
-        val timeUp: Boolean = false
+    data class JoinQueue(
+        val action: String = "join_queue",
+        val data: JoinQueueData
     ) : WebSocketMessage()
 
     @Serializable
-    data class DuelComplete(val winnerId: String?, val finalScores: Map<String, Int>) : WebSocketMessage()
+    data class JoinQueueData(
+        val player_id: String,
+        val display_name: String
+    )
 
     @Serializable
-    data class OpponentLeft(val reason: String) : WebSocketMessage()
+    data class MatchFound(
+        val action: String = "match_found",
+        val data: MatchFoundData
+    ) : WebSocketMessage()
 
     @Serializable
-    data class Error(val message: String) : WebSocketMessage()
+    data class MatchFoundData(
+        val match_id: String,
+        val opponent_id: String,
+        val opponent_name: String,
+        val player_id: String
+    )
 
     @Serializable
-    data class Ping(val timestamp: Long = System.currentTimeMillis()) : WebSocketMessage()
+    data class QuestionReceived(
+        val action: String = "question",
+        val data: QuestionData
+    ) : WebSocketMessage()
 
     @Serializable
-    data class Pong(val timestamp: Long) : WebSocketMessage()
+    data class QuestionData(
+        val question_id: String,
+        val question_text: String,
+        val options: List<String>,
+        val time_limit: Int
+    )
+
+    @Serializable
+    data class AnswerSubmitted(
+        val action: String = "submit_answer",
+        val data: AnswerData
+    ) : WebSocketMessage()
+
+    @Serializable
+    data class AnswerData(
+        val player_id: String,
+        val question_id: String,
+        val answer_index: Int
+    )
+
+    @Serializable
+    data class RoundResult(
+        val action: String = "round_result",
+        val data: RoundResultData
+    ) : WebSocketMessage()
+
+    @Serializable
+    data class RoundResultData(
+        val player1_correct: Boolean?,
+        val player2_correct: Boolean?,
+        val correct_answer: Int
+    )
+
+    @Serializable
+    data class DuelComplete(
+        val action: String = "duel_complete",
+        val data: DuelCompleteData
+    ) : WebSocketMessage()
+
+    @Serializable
+    data class DuelCompleteData(
+        val winner_id: String?
+    )
+
+    @Serializable
+    data class OpponentLeft(
+        val action: String = "opponent_left",
+        val data: OpponentLeftData
+    ) : WebSocketMessage()
+
+    @Serializable
+    data class OpponentLeftData(
+        val reason: String
+    )
+
+    @Serializable
+    data class Error(
+        val action: String = "error",
+        val data: ErrorData
+    ) : WebSocketMessage()
+
+    @Serializable
+    data class ErrorData(
+        val message: String
+    )
+
+    @Serializable
+    data class Queued(
+        val action: String = "queued",
+        val data: QueuedData
+    ) : WebSocketMessage()
+
+    @Serializable
+    data class QueuedData(
+        val position: Int
+    )
+
+    @Serializable
+    data class Ping(val action: String = "ping") : WebSocketMessage()
+
+    @Serializable
+    data class Pong(val action: String = "pong") : WebSocketMessage()
 }
 
 data class DuelState(
