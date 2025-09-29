@@ -13,7 +13,7 @@
     </queries>
 
     <application
-        android:name="com.example.beezle.MainApplication"
+        android:name="com.github.zzorgg.beezle.MainApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
