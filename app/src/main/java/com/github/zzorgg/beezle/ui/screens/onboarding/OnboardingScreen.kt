@@ -2,6 +2,7 @@ package com.github.zzorgg.beezle.ui.screens.onboarding
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -10,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.SportsMartialArts
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,9 +19,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.zzorgg.beezle.R
 import com.github.zzorgg.beezle.ui.screens.onboarding.components.OnboardingSlide
 import com.github.zzorgg.beezle.ui.theme.BackgroundDark
 import com.github.zzorgg.beezle.ui.theme.PrimaryBlue
@@ -83,21 +87,28 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = when (page) {
-                                        0 -> "⚡"
-                                        1 -> "" // replaced by icon below
-                                        else -> "💰"
-                                    },
-                                    fontSize = if (page == 1) 0.sp else 64.sp,
-                                    color = Color.White
-                                )
-                                if (page == 1) {
-                                    Icon(
+                                when (page) {
+                                    0 -> Image(
+                                        painter = painterResource(id = R.drawable.bee),
+                                        contentDescription = "Bee icon",
+                                        modifier = Modifier.size(80.dp)
+                                    )
+                                    1 -> Icon(
                                         imageVector = Icons.Default.SportsMartialArts,
-                                        contentDescription = null,
+                                        contentDescription = "Duel icon",
                                         tint = Color.White,
                                         modifier = Modifier.size(72.dp)
+                                    )
+                                    2 -> Icon(
+                                        imageVector = Icons.Default.AccountBalanceWallet,
+                                        contentDescription = "Rewards wallet icon",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(66.dp)
+                                    )
+                                    else -> Text(
+                                        text = "💰",
+                                        fontSize = 64.sp,
+                                        color = Color.White
                                     )
                                 }
                             }
