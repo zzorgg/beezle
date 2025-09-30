@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">Beezle</string>
     <!-- Web client ID used for Google Sign-In (client_type 3 in google-services.json). If the Gradle plugin generates this automatically you can remove it. -->
-    <string name="default_web_client_id">491564353441-vc1gi6i525u3d42c9idvu43r5eal15cp.apps.googleusercontent.com</string>
+    <string name="default_web_client_id">615731667669-vkjv8o59u3tegnvot8jv09fs5v5t52q1.apps.googleusercontent.com</string>
 </resources>
