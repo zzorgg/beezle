@@ -6,6 +6,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -20,6 +21,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.zzorgg.beezle.data.model.profile.UserProfile
 import com.github.zzorgg.beezle.data.wallet.WalletState
+import com.github.zzorgg.beezle.ui.components.EphemeralGreenTick
 import com.github.zzorgg.beezle.ui.screens.profile.components.AuthPrompt
 import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
@@ -28,6 +30,7 @@ import com.github.zzorgg.beezle.ui.theme.SurfaceDark
 import com.github.zzorgg.beezle.ui.theme.TextPrimary
 import com.github.zzorgg.beezle.ui.theme.TextSecondary
 import com.github.zzorgg.beezle.ui.theme.TextTertiary
+import androidx.compose.runtime.saveable.rememberSaveable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,34 +50,69 @@ fun ProfileScreenRoot(navController: NavController) {
     var editing by remember { mutableStateOf(false) }
     var usernameInput by remember { mutableStateOf("") }
 
-    ProfileScreen(
-        uiState = uiState,
-        dataState = dataState,
-        signInCallback = { profileViewModel.signin() },
-        signOutCallback = { profileViewModel.signout() },
-        walletState = walletState,
-        linkWalletCallback = {
-            if (walletState.publicKey != null) {
-                profileViewModel.linkWallet(walletState.publicKey!!)
-            }
-        },
-        usernameInput = usernameInput,
-        isEditingUsername = editing,
-        editUsernameCallback = {
-            usernameInput = it
-        },
-        editUsernameButtonCallback = {
-            if (editing) {
-                if (usernameInput.isNotBlank()) {
-                    profileViewModel.setUsername(usernameInput.trim())
-                }
-            } else {
-                usernameInput = dataState.userProfile!!.username ?: ""
-            }
-            editing = !editing
-        },
-        navigateBackCallback = { navController.popBackStack() },
-    )
+    // Flags to control when to show success tick
+    val signInInitiated = rememberSaveable { mutableStateOf(false) }
+    val hasShownSignInTick = rememberSaveable { mutableStateOf(false) }
+    val showTick = remember { mutableStateOf(false) }
+
+    // Trigger tick only after explicit sign-in action and first Success
+    LaunchedEffect(uiState.firebaseAuthStatus, signInInitiated.value) {
+        if (signInInitiated.value && !hasShownSignInTick.value && uiState.firebaseAuthStatus is AuthStatus.Success) {
+            showTick.value = true
+            hasShownSignInTick.value = true
+        }
+    }
+
+    Box { // wrap original ProfileScreen
+        val blurModifier = if (showTick.value) Modifier.blur(22.dp) else Modifier
+        Box(modifier = blurModifier) {
+            ProfileScreen(
+                uiState = uiState,
+                dataState = dataState,
+                signInCallback = {
+                    // Mark that a sign-in attempt was initiated
+                    signInInitiated.value = true
+                    profileViewModel.signin()
+                },
+                signOutCallback = {
+                    profileViewModel.signout()
+                    // Reset flags so next sign-in will show tick again
+                    signInInitiated.value = false
+                    hasShownSignInTick.value = false
+                    showTick.value = false
+                },
+                walletState = walletState,
+                linkWalletCallback = {
+                    if (walletState.publicKey != null) {
+                        profileViewModel.linkWallet(walletState.publicKey!!)
+                    }
+                },
+                usernameInput = usernameInput,
+                isEditingUsername = editing,
+                editUsernameCallback = {
+                    usernameInput = it
+                },
+                editUsernameButtonCallback = {
+                    if (editing) {
+                        if (usernameInput.isNotBlank()) {
+                            profileViewModel.setUsername(usernameInput.trim())
+                        }
+                    } else {
+                        usernameInput = dataState.userProfile!!.username ?: ""
+                    }
+                    editing = !editing
+                },
+                navigateBackCallback = { navController.popBackStack() },
+            )
+        }
+        EphemeralGreenTick(
+            visible = showTick.value,
+            fullScreen = true,
+            modifier = Modifier
+                .fillMaxSize(),
+            onFinished = { showTick.value = false }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

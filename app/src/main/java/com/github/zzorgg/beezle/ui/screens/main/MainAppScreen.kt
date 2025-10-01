@@ -1,47 +1,29 @@
 package com.github.zzorgg.beezle.ui.screens.main
 
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box // Added for floating bottom bar container
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SportsMartialArts
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
-import androidx.compose.material3.carousel.rememberCarouselState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -49,19 +31,18 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
+import com.github.zzorgg.beezle.ui.components.BannerMedia
+import com.github.zzorgg.beezle.ui.components.BannerVideoPlayer
 import com.github.zzorgg.beezle.ui.components.MonochromeAsyncImage
 import com.github.zzorgg.beezle.ui.screens.profile.ProfileViewModel
 import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
-import com.github.zzorgg.beezle.ui.theme.AccentGreen
-import com.github.zzorgg.beezle.ui.theme.BeezleTheme
-import com.github.zzorgg.beezle.ui.theme.PrimaryBlue
-import com.github.zzorgg.beezle.ui.theme.SurfaceDark
-import com.github.zzorgg.beezle.ui.theme.TextPrimary
-import com.github.zzorgg.beezle.ui.theme.TextSecondary
+import com.github.zzorgg.beezle.ui.theme.*
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.firebase.auth.FirebaseAuth
-import com.airbnb.lottie.compose.* // Lottie compose imports remain
+import com.airbnb.lottie.compose.*
+
+private enum class Subject { MATH, CS }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,9 +64,9 @@ fun MainAppScreenRoot(
     val aggregatedLevel = profileDataState.userProfile?.let { (it.mathLevel + it.csLevel) / 2 }
 
     val bannerItems = listOf(
-        "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_5384f9f8b96a0b9934b2bc35a4058376211636d2.600x338.jpg?t=1695270428",
-        "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_d5b6edd94e77ba6db31c44d8a3c09d807ab27751.600x338.jpg?t=1695270428",
-        "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_a81e4231cc8d55f58b51a4a938898af46503cae5.600x338.jpg?t=1695270428",
+        BannerMedia.AssetVideo("Maths.mp4"),
+        BannerMedia.AssetVideo("CS.mp4"),
+        BannerMedia.RemoteImage("https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_a81e4231cc8d55f58b51a4a938898af46503cae5.600x338.jpg?t=1695270428"),
     )
     val view = LocalView.current
 
@@ -105,16 +86,16 @@ fun MainAppScreenRoot(
 @Composable
 fun MainAppScreen(
     walletState: WalletState,
-    bannerItems: List<String>,
+    bannerItems: List<BannerMedia>,
     aggregatedLevel: Int?,
     avatarUrl: String?,
     navigateToCallback: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val view = LocalView.current
-    val preferredWidth: Dp
-    val density = LocalDensity.current
-    with(density) { preferredWidth = (view.width / 0.85).toInt().toDp() }
+    val subjectLabels = mapOf(Subject.MATH to "Math", Subject.CS to "CS")
+    var selectedSubject by remember { mutableStateOf(Subject.MATH) }
+    // Remove preferredWidth shrink; use full width banners like duel card
+    val pagerState = rememberPagerState(pageCount = { bannerItems.size })
 
     Scaffold(
         topBar = {
@@ -280,32 +261,92 @@ fun MainAppScreen(
             modifier = modifier
                 .fillMaxWidth()
                 .padding(8.dp, 16.dp)
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
-            // Carousel moved above duel card
             Column {
-                HorizontalMultiBrowseCarousel(
-                    state = rememberCarouselState { bannerItems.count() },
-                    preferredItemWidth = preferredWidth,
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 9f),
-                    itemSpacing = 8.dp,
-                ) { i ->
-                    MonochromeAsyncImage(
-                        bannerItems[i],
-                        contentDescription = "Image $i",
-                        contentScale = ContentScale.Crop,
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxWidth(),
+                        pageSpacing = 0.dp
+                    ) { page ->
+                        val item = bannerItems[page]
+                        val playing = (page == pagerState.currentPage)
+                        val itemModifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 9f)
+                            .clip(MaterialTheme.shapes.large)
+                        when (item) {
+                            is BannerMedia.RemoteImage -> {
+                                MonochromeAsyncImage(
+                                    item.url,
+                                    contentDescription = "Banner $page",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = itemModifier,
+                                    alternateImageModifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(16f / 9f)
+                                )
+                            }
+                            is BannerMedia.AssetGif -> {
+                                val assetUri = "file:///android_asset/${item.assetFile}"
+                                MonochromeAsyncImage(
+                                    assetUri,
+                                    contentDescription = "GIF $page",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = itemModifier,
+                                    alternateImageModifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(16f / 9f)
+                                )
+                            }
+                            is BannerMedia.AssetVideo -> {
+                                BannerVideoPlayer(
+                                    assetFile = item.assetFile,
+                                    autoplay = item.autoplay,
+                                    loop = item.loop,
+                                    playing = playing,
+                                    modifier = itemModifier
+                                )
+                            }
+                        }
+                    }
+                    // Pager indicator dots
+                    Spacer(Modifier.height(8.dp))
+                    Row(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .aspectRatio(16f / 9f)
-                            .maskClip(MaterialTheme.shapes.large),
-                        alternateImageModifier = Modifier
-                            .fillMaxSize()
-                            .aspectRatio(16f / 9f)
-                    )
+                            .align(Alignment.BottomCenter)
+                            .padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        repeat(bannerItems.size) { index ->
+                            val selected = pagerState.currentPage == index
+                            val targetSize = if (selected) 10.dp else 6.dp
+                            val animatedSize by animateDpAsState(
+                                targetValue = targetSize,
+                                label = "dotSize"
+                            )
+                            val animatedColor by animateColorAsState(
+                                targetValue = if (selected) PrimaryBlue else TextSecondary.copy(alpha = 0.35f),
+                                label = "dotColor"
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 4.dp)
+                                    .size(animatedSize)
+                                    .clip(CircleShape)
+                                    .background(animatedColor)
+                            )
+                        }
+                    }
                 }
             }
 
@@ -322,23 +363,89 @@ fun MainAppScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            Card(
+            // Replace Welcome header + Subject toggle with only colored subject tags
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { navigateToCallback("duels") },
-                colors = CardDefaults.cardColors(containerColor = SurfaceDark)
+                    .padding(top = 4.dp)
             ) {
-                Column(Modifier.padding(16.dp)) {
-                    Icon(
-                        imageVector = Icons.Default.SportsMartialArts,
-                        contentDescription = null,
-                        tint = PrimaryBlue
+                Subject.entries.forEach { subject ->
+                    val selected = subject == selectedSubject
+                    val baseColor = if (subject == Subject.MATH) PrimaryBlue else AccentGreen
+                    val bgColor by animateColorAsState(
+                        if (selected) baseColor.copy(alpha = 0.25f) else SurfaceDark,
+                        label = "subjectBg"
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Duels", color = TextPrimary, fontWeight = FontWeight.SemiBold)
-                    Text("Practice & compete", color = TextSecondary, fontSize = 12.sp)
+                    val textColor by animateColorAsState(
+                        if (selected) baseColor else baseColor.copy(alpha = 0.75f),
+                        label = "subjectText"
+                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(bgColor)
+                            .clickable { selectedSubject = subject }
+                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            subjectLabels[subject]!!,
+                            color = textColor,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Two cards: Duel Mode & Practice Mode for selected subject
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { navigateToCallback("duels") },
+                    colors = CardDefaults.cardColors(containerColor = SurfaceDark)
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.SportsMartialArts,
+                                contentDescription = null,
+                                tint = if (selectedSubject == Subject.MATH) PrimaryBlue else AccentGreen,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("${subjectLabels[selectedSubject]} Duel Mode", color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text("Real-time competitive play", color = TextSecondary, fontSize = 12.sp)
+                    }
+                }
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { navigateToCallback("practice/${selectedSubject.name.lowercase()}") },
+                    colors = CardDefaults.cardColors(containerColor = SurfaceDark)
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = if (selectedSubject == Subject.MATH) PrimaryBlue else AccentGreen,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("${subjectLabels[selectedSubject]} Practice Mode", color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text("Single-player training & streaks", color = TextSecondary, fontSize = 12.sp)
+                    }
+                }
+            }
+            Spacer(Modifier.height(96.dp)) // bottom padding to avoid cropping behind bottom bar
         }
     }
 }
@@ -350,8 +457,8 @@ fun MainAppScreenPreview() {
         MainAppScreen(
             walletState = WalletState(),
             bannerItems = listOf(
-                "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_5384f9f8b96a0b9934b2bc35a4058376211636d2.600x338.jpg?t=1695270428",
-                "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_d5b6edd94e77ba6db31c44d8a3c09d807ab27751.600x338.jpg?t=1695270428",
+                BannerMedia.RemoteImage("https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_5384f9f8b96a0b9934b2bc35a4058376211636d2.600x338.jpg?t=1695270428"),
+                BannerMedia.AssetGif("Pattern Recogni.gif")
             ),
             aggregatedLevel = 2,
             avatarUrl = null,

@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SportsMartialArts
 import androidx.compose.material3.*
@@ -68,13 +68,13 @@ private fun generateCsQuestion(): Question {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DuelsScreen(navController: NavController) {
+fun DuelsScreen(navController: NavController, initialCategory: Category = Category.MATH) {
     var level by remember { mutableStateOf(1) }
     var current by remember { mutableStateOf<Question?>(null) }
     var userAnswer by remember { mutableStateOf("") }
     var feedback by remember { mutableStateOf<String?>(null) }
     var streak by remember { mutableStateOf(0) }
-    var category by remember { mutableStateOf(Category.MATH) }
+    var category by remember { mutableStateOf(initialCategory) }
 
     fun nextQuestion() {
         feedback = null
@@ -82,7 +82,7 @@ fun DuelsScreen(navController: NavController) {
         current = if (category == Category.MATH) generateMathQuestion(level) else generateCsQuestion()
     }
 
-    LaunchedEffect(Unit) { nextQuestion() }
+    LaunchedEffect(Unit, category) { nextQuestion() }
 
     Surface(modifier = Modifier.fillMaxSize(), color = BackgroundDark) {
         Column(
@@ -94,7 +94,7 @@ fun DuelsScreen(navController: NavController) {
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = null, tint = TextPrimary)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = TextPrimary)
                 }
                 Spacer(Modifier.width(4.dp))
                 Icon(
@@ -144,7 +144,7 @@ fun DuelsScreen(navController: NavController) {
                                     streak += 1
                                     if (streak % 3 == 0) level += 1
                                 } else {
-                                    feedback = "❌ Incorrect. Answer: ${q.answer}";
+                                    feedback = "❌ Incorrect. Answer: ${q.answer}"
                                     streak = 0
                                 }
                             }, enabled = userAnswer.isNotBlank()) { Text("Check") }

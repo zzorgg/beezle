@@ -1,6 +1,7 @@
 package com.github.zzorgg.beezle.ui.screens.wallet
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,8 +31,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,6 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
+import com.github.zzorgg.beezle.ui.components.EphemeralGreenTick
 import com.github.zzorgg.beezle.ui.theme.AccentGreen
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 import com.github.zzorgg.beezle.ui.theme.SurfaceDark
@@ -56,39 +58,45 @@ fun WalletScreenRoot(
     walletManager: SolanaWalletManager = viewModel(),
 ) {
     val walletState by walletManager.walletState.collectAsState()
-    val hasNavigatedAfterConnection = remember { mutableStateOf(false) }
+    val showTick = remember { mutableStateOf(false) }
+    val prevConnected = remember { mutableStateOf(false) }
 
-    // Only navigate to main screen when wallet gets freshly connected (not restored)
     LaunchedEffect(walletState.isConnected, walletState.wasRestored) {
-        if (walletState.isConnected && !walletState.wasRestored && !hasNavigatedAfterConnection.value) {
-            hasNavigatedAfterConnection.value = true
-            navController.navigate("main") {
-                popUpTo("wallet") { inclusive = true }
-            }
+        if (walletState.isConnected && !walletState.wasRestored && !prevConnected.value) {
+            showTick.value = true
         }
+        prevConnected.value = walletState.isConnected
     }
 
-    WalletScreen(
-        walletState = walletState,
-        connectWalletCallback = {
-            hasNavigatedAfterConnection.value = false // Reset flag before new connection attempt
-            walletManager.connectWallet(sender)
-        },
-        disconnectWalletCallback = { walletManager.disconnectWallet(sender) },
-        clearErrorCallback = { walletManager.clearError() },
-        testSignMessageCallback = {
-            walletManager.signMessage(
-                sender,
-                "Hello from Beezle! Testing message signing."
+    Box {
+        val blurModifier = if (showTick.value) Modifier.blur(22.dp) else Modifier
+        Box(modifier = blurModifier) {
+            WalletScreen(
+                walletState = walletState,
+                connectWalletCallback = { walletManager.connectWallet(sender) },
+                disconnectWalletCallback = { walletManager.disconnectWallet(sender) },
+                clearErrorCallback = { walletManager.clearError() },
+                testSignMessageCallback = {
+                    walletManager.signMessage(
+                        sender,
+                        "Hello from Beezle! Testing message signing."
+                    )
+                },
+                navigateBackCallback = {
+                    navController.navigate("main") {
+                        popUpTo("wallet") { inclusive = true }
+                    }
+                },
+                modifier = modifier,
             )
-        },
-        navigateBackCallback = {
-            navController.navigate("main") {
-                popUpTo("wallet") { inclusive = true }
-            }
-        },
-        modifier = modifier,
-    )
+        }
+        EphemeralGreenTick(
+            visible = showTick.value,
+            fullScreen = true,
+            modifier = Modifier.matchParentSize(),
+            onFinished = { showTick.value = false }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
