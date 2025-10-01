@@ -48,95 +48,94 @@ fun DuelScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BackgroundDark)
-    ) {
-        Column(
+    Scaffold { innerPadding ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(innerPadding)
+                .background(BackgroundDark)
         ) {
-            // Top Bar (removed title per request)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
-                    )
-                }
-                Spacer(modifier = Modifier.weight(1f))
-                ConnectionStatusIndicator(duelState.connectionStatus)
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Main Content
-            when {
-                duelState.currentRoom != null && duelState.currentQuestion != null -> {
-                    // In-game UI
-                    GameplayScreen(
-                        duelState = duelState,
-                        onAnswerSelected = viewModel::submitAnswer,
-                        onClearRoundResult = viewModel::clearLastRoundResult
-                    )
+                // Top Bar (removed title per request)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    ConnectionStatusIndicator(duelState.connectionStatus)
                 }
 
-                duelState.currentRoom != null -> {
-                    // Waiting for question
-                    WaitingForQuestionScreen(duelState)
-                }
+                // Main Content
+                when {
+                    duelState.currentRoom != null && duelState.currentQuestion != null -> {
+                        // In-game UI
+                        GameplayScreen(
+                            duelState = duelState,
+                            onAnswerSelected = viewModel::submitAnswer,
+                            onClearRoundResult = viewModel::clearLastRoundResult
+                        )
+                    }
 
-                duelState.isSearching -> {
-                    // Searching for opponent
-                    SearchingScreen(
-                        onCancel = viewModel::leaveQueue,
-                        queuePosition = duelState.queuePosition,
-                        queueSince = duelState.queueSince
-                    )
-                }
+                    duelState.currentRoom != null -> {
+                        // Waiting for question
+                        WaitingForQuestionScreen(duelState)
+                    }
 
-                else -> {
-                    // Start screen
-                    StartDuelScreen(
-                        onStartDuel = {
-                            if (username.isBlank()) {
-                                showUsernameDialog = true
-                            } else {
-                                viewModel.startDuel(username)
+                    duelState.isSearching -> {
+                        // Searching for opponent
+                        SearchingScreen(
+                            onCancel = viewModel::leaveQueue,
+                            queuePosition = duelState.queuePosition,
+                            queueSince = duelState.queueSince
+                        )
+                    }
+
+                    else -> {
+                        // Start screen
+                        StartDuelScreen(
+                            onStartDuel = {
+                                if (username.isBlank()) {
+                                    showUsernameDialog = true
+                                } else {
+                                    viewModel.startDuel(username)
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
-        }
 
-        // Error Snackbar
-        duelState.error?.let { error ->
-            Card(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-                    .fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.Red.copy(alpha = 0.9f)
-                )
-            ) {
-                Text(
-                    text = error,
-                    modifier = Modifier.padding(16.dp),
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                )
+            // Error Snackbar
+            duelState.error?.let { error ->
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.Red.copy(alpha = 0.9f)
+                    )
+                ) {
+                    Text(
+                        text = error,
+                        modifier = Modifier.padding(16.dp),
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     }
@@ -341,7 +340,8 @@ private fun SearchingScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        val positionText = queuePosition?.let { "Your position in queue: #$it" } ?: "Joining queue..."
+        val positionText =
+            queuePosition?.let { "Your position in queue: #$it" } ?: "Joining queue..."
         val waitedText = if (queueSince != null) "Waiting: ${elapsedSeconds}s" else ""
 
         Text(

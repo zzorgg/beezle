@@ -13,7 +13,6 @@ import com.solana.mobilewalletadapter.clientlib.*
 import com.solana.mobilewalletadapter.common.signin.SignInWithSolana
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import androidx.core.net.toUri
@@ -36,7 +35,7 @@ data class WalletState(
 class SolanaWalletManager(application: Application) : AndroidViewModel(application) {
 
     private val _walletState = MutableStateFlow(WalletState())
-    val walletState: StateFlow<WalletState> = _walletState.asStateFlow()
+    val walletState: StateFlow<WalletState> = _walletState
 
     private lateinit var walletAdapter: MobileWalletAdapter
 
@@ -207,7 +206,8 @@ class SolanaWalletManager(application: Application) : AndroidViewModel(applicati
                             authToken = authToken,
                             walletName = walletName,
                             isLoading = false,
-                            error = null
+                            error = null,
+                            wasRestored = false // This is a fresh connection, not a restore
                         )
                         persistWithDataStore(true, publicKeyString, walletName, authToken)
                         fetchBalance()

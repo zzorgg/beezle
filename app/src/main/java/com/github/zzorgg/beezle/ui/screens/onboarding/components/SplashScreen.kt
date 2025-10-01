@@ -33,6 +33,7 @@ fun SplashScreen(onFinished: () -> Unit) {
         }
         imageBitmap = bmp?.asImageBitmap()
         // Keep a short delay (retain previous timing behavior)
+        // Maybe load signed in user here
         delay(2000)
         onFinished()
     }

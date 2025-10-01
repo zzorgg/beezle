@@ -1,393 +1,291 @@
 package com.github.zzorgg.beezle.ui.screens.wallet
 
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.github.zzorgg.beezle.ui.components.GradientButton
-import com.github.zzorgg.beezle.ui.components.ModernCard
-import androidx.compose.ui.graphics.Color
+import androidx.navigation.NavController
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
+import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.theme.AccentGreen
-import com.github.zzorgg.beezle.ui.theme.BackgroundDark
-import com.github.zzorgg.beezle.ui.theme.PrimaryBlue
+import com.github.zzorgg.beezle.ui.theme.BeezleTheme
+import com.github.zzorgg.beezle.ui.theme.SurfaceDark
 import com.github.zzorgg.beezle.ui.theme.TextPrimary
 import com.github.zzorgg.beezle.ui.theme.TextSecondary
-import com.github.zzorgg.beezle.ui.theme.TextTertiary
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
 @Composable
-fun WalletScreen(
-    onWalletConnected: () -> Unit = {},
-    sender: ActivityResultSender
+fun WalletScreenRoot(
+    sender: ActivityResultSender,
+    navController: NavController,
+    modifier: Modifier = Modifier,
+    walletManager: SolanaWalletManager = viewModel(),
 ) {
-    val walletManager: SolanaWalletManager = viewModel()
     val walletState by walletManager.walletState.collectAsState()
-    val context = LocalContext.current
+    val hasNavigatedAfterConnection = remember { mutableStateOf(false) }
 
-    // Content animation
-    val contentAlpha by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = tween(1000, delayMillis = 300),
-        label = "content_alpha"
-    )
-
-    // Show success message when connected
-    LaunchedEffect(walletState.isConnected) {
-        if (walletState.isConnected) {
-            onWalletConnected()
+    // Only navigate to main screen when wallet gets freshly connected (not restored)
+    LaunchedEffect(walletState.isConnected, walletState.wasRestored) {
+        if (walletState.isConnected && !walletState.wasRestored && !hasNavigatedAfterConnection.value) {
+            hasNavigatedAfterConnection.value = true
+            navController.navigate("main") {
+                popUpTo("wallet") { inclusive = true }
+            }
         }
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = BackgroundDark
+    WalletScreen(
+        walletState = walletState,
+        connectWalletCallback = {
+            hasNavigatedAfterConnection.value = false // Reset flag before new connection attempt
+            walletManager.connectWallet(sender)
+        },
+        disconnectWalletCallback = { walletManager.disconnectWallet(sender) },
+        clearErrorCallback = { walletManager.clearError() },
+        testSignMessageCallback = {
+            walletManager.signMessage(
+                sender,
+                "Hello from Beezle! Testing message signing."
+            )
+        },
+        navigateBackCallback = {
+            navController.navigate("main") {
+                popUpTo("wallet") { inclusive = true }
+            }
+        },
+        modifier = modifier,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WalletScreen(
+    walletState: WalletState,
+    connectWalletCallback: () -> Unit,
+    disconnectWalletCallback: () -> Unit,
+    clearErrorCallback: () -> Unit,
+    testSignMessageCallback: () -> Unit,
+    navigateBackCallback: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title ={},
+                navigationIcon = {
+                    IconButton(onClick = navigateBackCallback) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = TextPrimary
+                        )
+                    }
+                }
+            )
+        }
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .alpha(contentAlpha)
-                    .padding(24.dp)
-                    .navigationBarsPadding(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+        Column(
+            modifier
+                .padding(it)
+                .padding(8.dp)
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = SurfaceDark),
             ) {
-                Spacer(modifier = Modifier.height(40.dp))
-
-                // Header Section
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
                 ) {
-                    // Wallet Icon with connection status
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .background(
-                                color = if (walletState.isConnected) AccentGreen else PrimaryBlue,
-                                shape = RoundedCornerShape(20.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (walletState.isConnected) Icons.Default.CheckCircle else Icons.Default.AccountBalanceWallet,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(40.dp)
+                    Text(
+                        text = "Wallet Status",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextPrimary
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (walletState.isConnected) {
+                        Text(
+                            text = "Connected to ${walletState.walletName}",
+                            color = AccentGreen,
+                            fontSize = 16.sp
                         )
-                    }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    Text(
-                        text = if (walletState.isConnected) "Wallet Connected!" else "Connect Wallet",
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = TextPrimary,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text(
-                        text = if (walletState.isConnected)
-                            "Your ${walletState.walletName} wallet is now connected to Beezle"
-                        else
-                            "Connect your Solana wallet to start earning SOL through competitive duels",
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontSize = 16.sp,
-                            lineHeight = 24.sp
-                        ),
-                        color = TextSecondary,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(48.dp))
-
-                // Show wallet info if connected
-                if (walletState.isConnected) {
-                    ModernCard {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "Wallet Address",
-                                color = TextSecondary,
-                                fontSize = 14.sp
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = walletState.publicKey?.take(8) + "..." + walletState.publicKey?.takeLast(
+                        Text(
+                            text = "Address: ${walletState.publicKey?.take(8)}...${
+                                walletState.publicKey?.takeLast(
                                     8
-                                ),
-                                color = TextPrimary,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Text(
-                                text = "Balance",
-                                color = TextSecondary,
-                                fontSize = 14.sp
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "${walletState.balance ?: 0.0} SOL",
-                                color = TextPrimary,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                } else {
-                    // Wallet Options Cards
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Connect Existing Wallet Card
-                        ModernCard(
-                            onClick = {
-                                walletManager.connectWallet(sender)
-                            }
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .background(
-                                            color = PrimaryBlue.copy(alpha = 0.1f),
-                                            shape = RoundedCornerShape(12.dp)
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.AccountBalanceWallet,
-                                        contentDescription = null,
-                                        tint = PrimaryBlue,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.width(16.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "Connect Phantom Wallet",
-                                        color = TextPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Text(
-                                        text = "Connect to Phantom, Solflare, or other MWA wallets",
-                                        color = TextSecondary,
-                                        fontSize = 14.sp
-                                    )
-                                }
-                            }
-                        }
-
-                        // Sign In with Solana Card
-                        ModernCard(
-                            onClick = {
-                                walletManager.signInWithSolana(sender)
-                            }
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .background(
-                                            color = AccentGreen.copy(alpha = 0.1f),
-                                            shape = RoundedCornerShape(12.dp)
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Security,
-                                        contentDescription = null,
-                                        tint = AccentGreen,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.width(16.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "Sign In with Solana",
-                                        color = TextPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Text(
-                                        text = "Secure sign-in with wallet verification",
-                                        color = TextSecondary,
-                                        fontSize = 14.sp
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Error Display
-                walletState.error?.let { error ->
-                    Spacer(modifier = Modifier.height(16.dp))
-                    ModernCard(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Error,
-                                contentDescription = null,
-                                tint = Color.Red,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = error,
-                                color = Color.Red,
-                                fontSize = 14.sp,
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-
-                    // Clear error button
-                    TextButton(
-                        onClick = { walletManager.clearError() }
-                    ) {
-                        Text("Dismiss", color = TextTertiary)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Security Note
-                ModernCard {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Security,
-                            contentDescription = null,
-                            tint = AccentGreen,
-                            modifier = Modifier.size(20.dp)
-                        )
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Text(
-                            text = "Your wallet stays secure. We never store your private keys.",
+                                )
+                            }",
                             color = TextSecondary,
-                            fontSize = 14.sp,
-                            modifier = Modifier.weight(1f)
+                            fontSize = 14.sp
                         )
-                    }
-                }
 
-                Spacer(modifier = Modifier.weight(1f))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                // Primary Action Button
-                if (walletState.isConnected) {
-                    GradientButton(
-                        text = "Continue to App",
-                        onClick = onWalletConnected,
-                        modifier = Modifier.fillMaxWidth(),
-                        icon = Icons.Default.CheckCircle
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    OutlinedButton(
-                        onClick = {
-                            walletManager.disconnectWallet(sender)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = TextSecondary
-                        )
-                    ) {
-                        Text("Disconnect Wallet")
-                    }
-                } else {
-                    GradientButton(
-                        text = if (walletState.isLoading) "Connecting..." else "Connect Wallet",
-                        onClick = {
-                            walletManager.connectWallet(sender)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        icon = Icons.Default.AccountBalanceWallet,
-                        enabled = !walletState.isLoading
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Skip for now option (only show if not connected)
-                if (!walletState.isConnected) {
-                    TextButton(
-                        onClick = onWalletConnected,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
                         Text(
-                            text = "Skip for now (Demo mode)",
-                            color = TextTertiary,
+                            text = "Balance: ${walletState.balance ?: 0.0} SOL",
+                            color = TextPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    } else {
+                        Text(
+                            text = "No wallet connected",
+                            color = Color.Red,
+                            fontSize = 16.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "Connect your Phantom wallet to get started",
+                            color = TextSecondary,
                             fontSize = 14.sp
                         )
                     }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        // Connect/Disconnect Button
+                        if (!walletState.isConnected) {
+                            FilledTonalButton(
+                                onClick = connectWalletCallback,
+                                modifier = Modifier.fillMaxWidth(0.85f),
+                                enabled = !walletState.isLoading,
+                            ) {
+                                if (walletState.isLoading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        color = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
+                                Text(
+                                    text = when {
+                                        walletState.isLoading -> "Connecting..."
+                                        else -> "Connect Phantom Wallet"
+                                    }
+                                )
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = disconnectWalletCallback,
+                                modifier = Modifier.fillMaxWidth(0.85f),
+                            ) {
+                                Text(text = "Disconnect Wallet")
+                            }
+                        }
+                    }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Loading overlay
-            if (walletState.isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.5f)),
-                    contentAlignment = Alignment.Center
+            // Error Display
+            walletState.error?.let { error ->
+                Spacer(modifier = Modifier.height(16.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.1f))
                 ) {
-                    CircularProgressIndicator(
-                        color = PrimaryBlue
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Error",
+                            color = Color.Red,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = error,
+                            color = Color.Red,
+                            fontSize = 14.sp
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextButton(onClick = clearErrorCallback) {
+                            Text("Dismiss", color = Color.Red)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Test Sign Message Button (only if connected)
+            if (walletState.isConnected) {
+                OutlinedButton(
+                    onClick = testSignMessageCallback,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Test Sign Message")
                 }
             }
         }
+    }
+}
+
+@Preview
+@Composable
+private fun WalletScreenPreview() {
+    BeezleTheme {
+        WalletScreen(
+            walletState = WalletState(),
+            connectWalletCallback = {},
+            disconnectWalletCallback = {},
+            clearErrorCallback = {},
+            testSignMessageCallback = {},
+            navigateBackCallback = {},
+        )
     }
 }

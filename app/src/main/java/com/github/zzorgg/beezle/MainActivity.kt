@@ -11,11 +11,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.github.zzorgg.beezle.ui.screens.duel.DuelScreen
-import com.github.zzorgg.beezle.ui.screens.main.MainAppScreen
+import com.github.zzorgg.beezle.ui.screens.main.MainAppScreenRoot
 import com.github.zzorgg.beezle.ui.screens.onboarding.OnboardingScreen
 import com.github.zzorgg.beezle.ui.screens.onboarding.components.SplashScreen
-import com.github.zzorgg.beezle.ui.screens.profile.ProfileScreen
-import com.github.zzorgg.beezle.ui.screens.wallet.WalletScreen
+import com.github.zzorgg.beezle.ui.screens.profile.ProfileScreenRoot
+import com.github.zzorgg.beezle.ui.screens.onboarding.components.WalletOnboardingScreen
+import com.github.zzorgg.beezle.ui.screens.wallet.WalletScreenRoot
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 import dagger.hilt.android.AndroidEntryPoint
@@ -32,21 +33,17 @@ class MainActivity : ComponentActivity() {
             BeezleTheme {
                 val navController = rememberNavController()
                 val mainViewModel: MainViewModel = viewModel()
-                val isSplashFinished by mainViewModel.isSplashFinished.collectAsState()
                 val localData by mainViewModel.localData.collectAsState()
 
                 NavHost(
                     navController = navController,
-                    startDestination =
-                        if (isSplashFinished)
-                            if (localData.hasOnboarded)
-                                if (localData.hasConnectedWallet) "main" else "wallet"
-                            else "onboarding"
-                        else "splash"
+                    startDestination = "splash",
                 ) {
                     composable("splash") {
                         SplashScreen(onFinished = {
-                            navController.navigate("onboarding") {
+                            val destination =
+                                if (localData.hasOnboarded) "main" else "onboarding"
+                            navController.navigate(destination) {
                                 popUpTo("splash") { inclusive = true }
                             }
                         })
@@ -59,8 +56,8 @@ class MainActivity : ComponentActivity() {
                             mainViewModel.finishOnBoarding()
                         })
                     }
-                    composable("wallet") {
-                        WalletScreen(
+                    composable("wallet-onboarding") {
+                        WalletOnboardingScreen(
                             onWalletConnected = {
                                 navController.navigate("main") {
                                     popUpTo("wallet") { inclusive = true }
@@ -71,16 +68,22 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("main") {
-                        MainAppScreen(sender, navController)
+                        MainAppScreenRoot(navController)
                     }
                     composable("profile") {
-                        ProfileScreen(navController = navController)
+                        ProfileScreenRoot(navController = navController)
                     }
                     composable("duels") {
                         DuelScreen(
                             onNavigateBack = {
                                 navController.popBackStack()
                             }
+                        )
+                    }
+                    composable("wallet") {
+                        WalletScreenRoot(
+                            sender = sender,
+                            navController = navController,
                         )
                     }
                 }

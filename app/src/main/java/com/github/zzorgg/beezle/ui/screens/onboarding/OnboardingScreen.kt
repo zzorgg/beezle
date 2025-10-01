@@ -191,7 +191,7 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                         // Empty spacer to maintain alignment
                         Spacer(modifier = Modifier.width(1.dp))
 
-                        // Get Started Button - centered but with proper width
+                        // Connect Wallet Button - centered but with proper width
                         Button(
                             onClick = onGetStarted,
                             modifier = Modifier.width(200.dp),
@@ -200,7 +200,7 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                             )
                         ) {
                             Text(
-                                text = "Get Started",
+                                text = "Connect Wallet",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold
                             )
