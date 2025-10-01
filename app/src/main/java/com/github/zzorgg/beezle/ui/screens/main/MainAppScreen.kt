@@ -3,30 +3,13 @@ package com.github.zzorgg.beezle.ui.screens.main
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SportsMartialArts
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.*
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
@@ -38,7 +21,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -46,16 +28,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.github.zzorgg.beezle.R
+import coil.compose.AsyncImage
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.MonochromeAsyncImage
-import com.github.zzorgg.beezle.ui.theme.AccentGreen
-import com.github.zzorgg.beezle.ui.theme.BeezleTheme
-import com.github.zzorgg.beezle.ui.theme.PrimaryBlue
-import com.github.zzorgg.beezle.ui.theme.SurfaceDark
-import com.github.zzorgg.beezle.ui.theme.TextPrimary
-import com.github.zzorgg.beezle.ui.theme.TextSecondary
+import com.github.zzorgg.beezle.ui.screens.profile.ProfileViewModel
+import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
+import com.github.zzorgg.beezle.ui.theme.*
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,6 +46,21 @@ fun MainAppScreenRoot(
 ) {
     val walletManager: SolanaWalletManager = viewModel()
     val walletState by walletManager.walletState.collectAsState()
+
+    // Profile + levels
+    val profileViewModel: ProfileViewModel = hiltViewModel()
+    val profileViewState by profileViewModel.profileViewState.collectAsStateWithLifecycle()
+    val profileDataState by profileViewModel.profileDataState.collectAsStateWithLifecycle()
+
+    // Attempt refresh when entering main screen if auth ok (wallet public key used for potential linking)
+    androidx.compose.runtime.LaunchedEffect(walletState.publicKey, profileViewState.firebaseAuthStatus) {
+        // Safe call – inside VM it early returns if user not signed in
+        profileViewModel.refresh(walletState.publicKey)
+    }
+
+    // Aggregate level (floor of average) or null if profile missing
+    val aggregatedLevel = profileDataState.userProfile?.let { (it.mathLevel + it.csLevel) / 2 }
+
     val bannerItems = listOf(
         "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_5384f9f8b96a0b9934b2bc35a4058376211636d2.600x338.jpg?t=1695270428",
         "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_d5b6edd94e77ba6db31c44d8a3c09d807ab27751.600x338.jpg?t=1695270428",
@@ -74,6 +71,8 @@ fun MainAppScreenRoot(
     MainAppScreen(
         walletState = walletState,
         bannerItems = bannerItems,
+        aggregatedLevel = aggregatedLevel,
+        avatarUrl = FirebaseAuth.getInstance().currentUser?.photoUrl?.toString(),
         navigateToCallback = {
             view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
             navController.navigate(it)
@@ -86,6 +85,8 @@ fun MainAppScreenRoot(
 fun MainAppScreen(
     walletState: WalletState,
     bannerItems: List<String>,
+    aggregatedLevel: Int?,
+    avatarUrl: String?,
     navigateToCallback: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -98,13 +99,43 @@ fun MainAppScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.headlineMedium
-                    )
+                title = { /* Removed app title per request */ },
+                navigationIcon = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) {
+                        if (avatarUrl != null) {
+                            AsyncImage(
+                                model = avatarUrl,
+                                contentDescription = "Profile",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .clickable { navigateToCallback("profile") }
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = PrimaryBlue,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(PrimaryBlue.copy(alpha = 0.15f))
+                                    .clickable { navigateToCallback("profile") }
+                                    .padding(8.dp)
+                            )
+                        }
+                        if (aggregatedLevel != null) {
+                            Spacer(Modifier.width(8.dp))
+                            LevelBadge("Level $aggregatedLevel")
+                        }
+                    }
                 },
                 actions = {
+                    // Wallet chip only on right now
                     if (walletState.isConnected) {
                         Row(
                             modifier = Modifier
@@ -239,9 +270,9 @@ private fun MainAppScreenPreview() {
             walletState = WalletState(),
             bannerItems = listOf(
                 "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_5384f9f8b96a0b9934b2bc35a4058376211636d2.600x338.jpg?t=1695270428",
-                "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_d5b6edd94e77ba6db31c44d8a3c09d807ab27751.600x338.jpg?t=1695270428",
-                "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_a81e4231cc8d55f58b51a4a938898af46503cae5.600x338.jpg?t=1695270428",
             ),
+            aggregatedLevel = 2,
+            avatarUrl = null,
             navigateToCallback = {},
         )
     }
