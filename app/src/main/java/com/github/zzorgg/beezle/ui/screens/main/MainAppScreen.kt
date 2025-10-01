@@ -3,13 +3,31 @@ package com.github.zzorgg.beezle.ui.screens.main
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box // Added for floating bottom bar container
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SportsMartialArts
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
@@ -34,8 +52,13 @@ import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.MonochromeAsyncImage
 import com.github.zzorgg.beezle.ui.screens.profile.ProfileViewModel
 import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
-import com.github.zzorgg.beezle.ui.theme.*
-import androidx.hilt.navigation.compose.hiltViewModel
+import com.github.zzorgg.beezle.ui.theme.AccentGreen
+import com.github.zzorgg.beezle.ui.theme.BeezleTheme
+import com.github.zzorgg.beezle.ui.theme.PrimaryBlue
+import com.github.zzorgg.beezle.ui.theme.SurfaceDark
+import com.github.zzorgg.beezle.ui.theme.TextPrimary
+import com.github.zzorgg.beezle.ui.theme.TextSecondary
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.firebase.auth.FirebaseAuth
 
@@ -47,18 +70,15 @@ fun MainAppScreenRoot(
     val walletManager: SolanaWalletManager = viewModel()
     val walletState by walletManager.walletState.collectAsState()
 
-    // Profile + levels
     val profileViewModel: ProfileViewModel = hiltViewModel()
     val profileViewState by profileViewModel.profileViewState.collectAsStateWithLifecycle()
     val profileDataState by profileViewModel.profileDataState.collectAsStateWithLifecycle()
 
-    // Attempt refresh when entering main screen if auth ok (wallet public key used for potential linking)
+    // Refresh when wallet public key or auth status changes
     androidx.compose.runtime.LaunchedEffect(walletState.publicKey, profileViewState.firebaseAuthStatus) {
-        // Safe call – inside VM it early returns if user not signed in
         profileViewModel.refresh(walletState.publicKey)
     }
 
-    // Aggregate level (floor of average) or null if profile missing
     val aggregatedLevel = profileDataState.userProfile?.let { (it.mathLevel + it.csLevel) / 2 }
 
     val bannerItems = listOf(
@@ -93,13 +113,12 @@ fun MainAppScreen(
     val view = LocalView.current
     val preferredWidth: Dp
     val density = LocalDensity.current
-    with(density) {
-        preferredWidth = (view.width / 0.85).toInt().toDp()
-    }
+    with(density) { preferredWidth = (view.width / 0.85).toInt().toDp() }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { /* Removed app title per request */ },
+                title = { /* No title */ },
                 navigationIcon = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -135,7 +154,6 @@ fun MainAppScreen(
                     }
                 },
                 actions = {
-                    // Wallet chip only on right now
                     if (walletState.isConnected) {
                         Row(
                             modifier = Modifier
@@ -151,12 +169,8 @@ fun MainAppScreen(
                                 tint = AccentGreen,
                                 modifier = Modifier.size(16.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Wallet",
-                                color = AccentGreen,
-                                fontSize = 12.sp
-                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text("Wallet", color = AccentGreen, fontSize = 12.sp)
                         }
                     } else {
                         Row(
@@ -173,16 +187,92 @@ fun MainAppScreen(
                                 tint = PrimaryBlue,
                                 modifier = Modifier.size(16.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Connect",
-                                color = PrimaryBlue,
-                                fontSize = 12.sp
-                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text("Connect", color = PrimaryBlue, fontSize = 12.sp)
                         }
                     }
                 }
             )
+        },
+        bottomBar = {
+            // Floating pill-style bottom bar only on this screen
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp) // spacing from bottom edge
+            ) {
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .clip(CircleShape),
+                    shape = CircleShape,
+                    colors = CardDefaults.cardColors(containerColor = SurfaceDark.copy(alpha = 0.95f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .padding(horizontal = 28.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(36.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Duels
+                        Row(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .clickable { navigateToCallback("duels") }
+                                .padding(horizontal = 4.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SportsMartialArts,
+                                contentDescription = "Duels",
+                                tint = PrimaryBlue,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text("Duels", color = TextPrimary, fontSize = 13.sp)
+                        }
+                        // Profile
+                        Row(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .clickable { navigateToCallback("profile") }
+                                .padding(horizontal = 4.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Profile",
+                                tint = PrimaryBlue,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text("Profile", color = TextPrimary, fontSize = 13.sp)
+                        }
+                        // Wallet / Connect
+                        Row(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .clickable { navigateToCallback("wallet") }
+                                .padding(horizontal = 4.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AccountBalanceWallet,
+                                contentDescription = "Wallet",
+                                tint = if (walletState.isConnected) AccentGreen else PrimaryBlue,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                if (walletState.isConnected) "Wallet" else "Connect",
+                                color = if (walletState.isConnected) AccentGreen else TextPrimary,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+                }
+            }
         }
     ) { innerPadding ->
         Column(
@@ -191,50 +281,9 @@ fun MainAppScreen(
                 .padding(8.dp, 16.dp)
                 .padding(innerPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Bottom,
+            verticalArrangement = Arrangement.Top, // changed from Bottom so carousel sits at top
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { navigateToCallback("duels") },
-                    colors = CardDefaults.cardColors(containerColor = SurfaceDark)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Icon(
-                            imageVector = Icons.Default.SportsMartialArts,
-                            contentDescription = null,
-                            tint = PrimaryBlue
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Duels", color = TextPrimary, fontWeight = FontWeight.SemiBold)
-                        Text("Practice & compete", color = TextSecondary, fontSize = 12.sp)
-                    }
-                }
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { navigateToCallback("profile") },
-                    colors = CardDefaults.cardColors(containerColor = SurfaceDark)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            tint = AccentGreen
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Profile", color = TextPrimary, fontWeight = FontWeight.SemiBold)
-                        Text("Stats & levels", color = TextSecondary, fontSize = 12.sp)
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
+            // Carousel moved above duel card
             Column {
                 HorizontalMultiBrowseCarousel(
                     state = rememberCarouselState { bannerItems.count() },
@@ -250,12 +299,32 @@ fun MainAppScreen(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxSize()
-                            .aspectRatio(16f / 9f) // 1920 x 1080
+                            .aspectRatio(16f / 9f)
                             .maskClip(MaterialTheme.shapes.large),
                         alternateImageModifier = Modifier
                             .fillMaxSize()
-                            .aspectRatio(16f / 9f) // 1920 x 1080
+                            .aspectRatio(16f / 9f)
                     )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { navigateToCallback("duels") },
+                colors = CardDefaults.cardColors(containerColor = SurfaceDark)
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.SportsMartialArts,
+                        contentDescription = null,
+                        tint = PrimaryBlue
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Duels", color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                    Text("Practice & compete", color = TextSecondary, fontSize = 12.sp)
                 }
             }
         }
@@ -264,12 +333,13 @@ fun MainAppScreen(
 
 @Preview
 @Composable
-private fun MainAppScreenPreview() {
+fun MainAppScreenPreview() {
     BeezleTheme {
         MainAppScreen(
             walletState = WalletState(),
             bannerItems = listOf(
                 "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_5384f9f8b96a0b9934b2bc35a4058376211636d2.600x338.jpg?t=1695270428",
+                "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_d5b6edd94e77ba6db31c44d8a3c09d807ab27751.600x338.jpg?t=1695270428",
             ),
             aggregatedLevel = 2,
             avatarUrl = null,
