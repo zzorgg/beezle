@@ -61,6 +61,7 @@ import com.github.zzorgg.beezle.ui.theme.TextSecondary
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.firebase.auth.FirebaseAuth
+import com.airbnb.lottie.compose.* // Lottie compose imports remain
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -281,7 +282,7 @@ fun MainAppScreen(
                 .padding(8.dp, 16.dp)
                 .padding(innerPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top, // changed from Bottom so carousel sits at top
+            verticalArrangement = Arrangement.Top,
         ) {
             // Carousel moved above duel card
             Column {
@@ -308,7 +309,18 @@ fun MainAppScreen(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            // Simple Lottie animation (XO7TbUiuBv.json) without glow effect
+            val duelBannerComposition by rememberLottieComposition(LottieCompositionSpec.Asset("XO7TbUiuBv.json"))
+            LottieAnimation(
+                composition = duelBannerComposition,
+                iterations = LottieConstants.IterateForever,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .padding(vertical = 8.dp)
+            )
+
+            Spacer(Modifier.height(8.dp))
 
             Card(
                 modifier = Modifier
