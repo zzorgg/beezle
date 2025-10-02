@@ -29,6 +29,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import coil.ImageLoader
+import coil.decode.GifDecoder
+import androidx.compose.ui.platform.LocalContext
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.BannerMedia
@@ -43,6 +46,30 @@ import com.google.firebase.auth.FirebaseAuth
 import com.airbnb.lottie.compose.*
 
 private enum class Subject { MATH, CS }
+
+@Composable
+fun AssetGifImage(
+    assetFile: String,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Fit
+) {
+    val context = LocalContext.current
+    val imageLoader = remember {
+        ImageLoader.Builder(context)
+            .components {
+                add(GifDecoder.Factory())
+            }
+            .build()
+    }
+
+    AsyncImage(
+        model = "file:///android_asset/$assetFile",
+        contentDescription = null,
+        imageLoader = imageLoader,
+        modifier = modifier,
+        contentScale = contentScale
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,8 +91,8 @@ fun MainAppScreenRoot(
     val aggregatedLevel = profileDataState.userProfile?.let { (it.mathLevel + it.csLevel) / 2 }
 
     val bannerItems = listOf(
-        BannerMedia.AssetVideo("Maths.mp4"),
-        BannerMedia.AssetVideo("CS.mp4"),
+        BannerMedia.AssetGif("Maths.gif"),
+        BannerMedia.AssetGif("cs.gif"),
         BannerMedia.RemoteImage("https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_a81e4231cc8d55f58b51a4a938898af46503cae5.600x338.jpg?t=1695270428"),
     )
     val view = LocalView.current
@@ -296,15 +323,10 @@ fun MainAppScreen(
                                 )
                             }
                             is BannerMedia.AssetGif -> {
-                                val assetUri = "file:///android_asset/${item.assetFile}"
-                                MonochromeAsyncImage(
-                                    assetUri,
-                                    contentDescription = "GIF $page",
+                                AssetGifImage(
+                                    assetFile = item.assetFile,
                                     contentScale = ContentScale.Crop,
-                                    modifier = itemModifier,
-                                    alternateImageModifier = Modifier
-                                        .fillMaxWidth()
-                                        .aspectRatio(16f / 9f)
+                                    modifier = itemModifier
                                 )
                             }
                             is BannerMedia.AssetVideo -> {
@@ -458,7 +480,7 @@ fun MainAppScreenPreview() {
             walletState = WalletState(),
             bannerItems = listOf(
                 BannerMedia.RemoteImage("https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_5384f9f8b96a0b9934b2bc35a4058376211636d2.600x338.jpg?t=1695270428"),
-                BannerMedia.AssetGif("Maths.mp4")
+                BannerMedia.AssetGif("Maths.gif")
             ),
             aggregatedLevel = 2,
             avatarUrl = null,
