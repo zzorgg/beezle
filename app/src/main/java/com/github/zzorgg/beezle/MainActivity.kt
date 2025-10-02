@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("onboarding") {
                         OnboardingScreen(onGetStarted = {
-                            navController.navigate("wallet") {
+                            navController.navigate("wallet-onboarding") {
                                 popUpTo("onboarding") { inclusive = true }
                             }
                             mainViewModel.finishOnBoarding()
@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
                         WalletOnboardingScreen(
                             onWalletConnected = {
                                 navController.navigate("main") {
-                                    popUpTo("wallet") { inclusive = true }
+                                    popUpTo("wallet-onboarding") { inclusive = true }
                                 }
                                 mainViewModel.connectedWallet()
                             },

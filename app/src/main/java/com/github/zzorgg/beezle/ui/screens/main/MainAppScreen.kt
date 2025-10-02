@@ -1,37 +1,44 @@
 package com.github.zzorgg.beezle.ui.screens.main
 
+import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SportsMartialArts
 import androidx.compose.material3.*
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import coil.ImageLoader
 import coil.decode.GifDecoder
-import androidx.compose.ui.platform.LocalContext
+import coil.decode.ImageDecoderDecoder
+import coil.request.ImageRequest
+import com.airbnb.lottie.compose.*
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.BannerMedia
@@ -40,36 +47,10 @@ import com.github.zzorgg.beezle.ui.components.MonochromeAsyncImage
 import com.github.zzorgg.beezle.ui.screens.profile.ProfileViewModel
 import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
 import com.github.zzorgg.beezle.ui.theme.*
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.firebase.auth.FirebaseAuth
-import com.airbnb.lottie.compose.*
+import com.github.zzorgg.beezle.R
 
 private enum class Subject { MATH, CS }
-
-@Composable
-fun AssetGifImage(
-    assetFile: String,
-    modifier: Modifier = Modifier,
-    contentScale: ContentScale = ContentScale.Fit
-) {
-    val context = LocalContext.current
-    val imageLoader = remember {
-        ImageLoader.Builder(context)
-            .components {
-                add(GifDecoder.Factory())
-            }
-            .build()
-    }
-
-    AsyncImage(
-        model = "file:///android_asset/$assetFile",
-        contentDescription = null,
-        imageLoader = imageLoader,
-        modifier = modifier,
-        contentScale = contentScale
-    )
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,16 +65,18 @@ fun MainAppScreenRoot(
     val profileDataState by profileViewModel.profileDataState.collectAsStateWithLifecycle()
 
     // Refresh when wallet public key or auth status changes
-    androidx.compose.runtime.LaunchedEffect(walletState.publicKey, profileViewState.firebaseAuthStatus) {
+    androidx.compose.runtime.LaunchedEffect(
+        walletState.publicKey,
+        profileViewState.firebaseAuthStatus
+    ) {
         profileViewModel.refresh(walletState.publicKey)
     }
 
     val aggregatedLevel = profileDataState.userProfile?.let { (it.mathLevel + it.csLevel) / 2 }
 
     val bannerItems = listOf(
-        BannerMedia.AssetGif("Maths.gif"),
-        BannerMedia.AssetGif("cs.gif"),
-        BannerMedia.RemoteImage("https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_a81e4231cc8d55f58b51a4a938898af46503cae5.600x338.jpg?t=1695270428"),
+        BannerMedia.AssetGif(R.drawable.maths_banner),
+        BannerMedia.AssetGif(R.drawable.cs_banner),
     )
     val view = LocalView.current
 
@@ -294,78 +277,65 @@ fun MainAppScreen(
             verticalArrangement = Arrangement.Top,
         ) {
             Column {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxWidth(),
-                        pageSpacing = 0.dp
-                    ) { page ->
-                        val item = bannerItems[page]
-                        val playing = (page == pagerState.currentPage)
-                        val itemModifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(16f / 9f)
-                            .clip(MaterialTheme.shapes.large)
-                        when (item) {
-                            is BannerMedia.RemoteImage -> {
-                                MonochromeAsyncImage(
-                                    item.url,
-                                    contentDescription = "Banner $page",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = itemModifier,
-                                    alternateImageModifier = Modifier
-                                        .fillMaxWidth()
-                                        .aspectRatio(16f / 9f)
-                                )
-                            }
-                            is BannerMedia.AssetGif -> {
-                                AssetGifImage(
-                                    assetFile = item.assetFile,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = itemModifier
-                                )
-                            }
-                            is BannerMedia.AssetVideo -> {
-                                BannerVideoPlayer(
-                                    assetFile = item.assetFile,
-                                    autoplay = item.autoplay,
-                                    loop = item.loop,
-                                    playing = playing,
-                                    modifier = itemModifier
-                                )
-                            }
+                val view = LocalView.current
+                val preferredWidth: Dp
+                val density = LocalDensity.current
+                with(density) {
+                    preferredWidth = (view.width / 0.85).toInt().toDp()
+                }
+                HorizontalMultiBrowseCarousel(
+                    state = rememberCarouselState { bannerItems.size },
+                    modifier = Modifier.fillMaxWidth(),
+                    preferredItemWidth = preferredWidth,
+                    itemSpacing = 8.dp,
+                ) { page ->
+                    val item = bannerItems[page]
+                    val playing = (page == pagerState.currentPage)
+                    val itemModifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f)
+                        .maskClip(MaterialTheme.shapes.large)
+                    when (item) {
+                        is BannerMedia.RemoteImage -> {
+                            MonochromeAsyncImage(
+                                item.url,
+                                contentDescription = "Banner $page",
+                                contentScale = ContentScale.Crop,
+                                modifier = itemModifier,
+                                alternateImageModifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(16f / 9f)
+                            )
                         }
-                    }
-                    // Pager indicator dots
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        repeat(bannerItems.size) { index ->
-                            val selected = pagerState.currentPage == index
-                            val targetSize = if (selected) 10.dp else 6.dp
-                            val animatedSize by animateDpAsState(
-                                targetValue = targetSize,
-                                label = "dotSize"
+
+                        is BannerMedia.AssetGif -> {
+                            MonochromeAsyncImage(
+                                ImageRequest.Builder(LocalContext.current)
+                                    .data(item.assetFile)
+                                    .decoderFactory(
+                                        if (Build.VERSION.SDK_INT >= 28) {
+                                            ImageDecoderDecoder.Factory()
+                                        } else {
+                                            GifDecoder.Factory()
+                                        }
+                                    )
+                                    .build(),
+                                contentDescription = "GIF $page",
+                                contentScale = ContentScale.Crop,
+                                modifier = itemModifier,
+                                alternateImageModifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(16f / 9f)
                             )
-                            val animatedColor by animateColorAsState(
-                                targetValue = if (selected) PrimaryBlue else TextSecondary.copy(alpha = 0.35f),
-                                label = "dotColor"
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .padding(horizontal = 4.dp)
-                                    .size(animatedSize)
-                                    .clip(CircleShape)
-                                    .background(animatedColor)
+                        }
+
+                        is BannerMedia.AssetVideo -> {
+                            BannerVideoPlayer(
+                                assetFile = item.assetFile,
+                                autoplay = item.autoplay,
+                                loop = item.loop,
+                                playing = playing,
+                                modifier = itemModifier
                             )
                         }
                     }
@@ -423,7 +393,10 @@ fun MainAppScreen(
             Spacer(Modifier.height(16.dp))
 
             // Two cards: Duel Mode & Practice Mode for selected subject
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -439,7 +412,11 @@ fun MainAppScreen(
                                 modifier = Modifier.size(24.dp)
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text("${subjectLabels[selectedSubject]} Duel Mode", color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "${subjectLabels[selectedSubject]} Duel Mode",
+                                color = TextPrimary,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text("Real-time competitive play", color = TextSecondary, fontSize = 12.sp)
@@ -460,10 +437,18 @@ fun MainAppScreen(
                                 modifier = Modifier.size(24.dp)
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text("${subjectLabels[selectedSubject]} Practice Mode", color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "${subjectLabels[selectedSubject]} Practice Mode",
+                                color = TextPrimary,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                         Spacer(modifier = Modifier.height(6.dp))
-                        Text("Single-player training & streaks", color = TextSecondary, fontSize = 12.sp)
+                        Text(
+                            "Single-player training & streaks",
+                            color = TextSecondary,
+                            fontSize = 12.sp
+                        )
                     }
                 }
             }
@@ -479,8 +464,9 @@ fun MainAppScreenPreview() {
         MainAppScreen(
             walletState = WalletState(),
             bannerItems = listOf(
+                BannerMedia.AssetGif(R.drawable.cs_banner),
                 BannerMedia.RemoteImage("https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_5384f9f8b96a0b9934b2bc35a4058376211636d2.600x338.jpg?t=1695270428"),
-                BannerMedia.AssetGif("Maths.gif")
+                BannerMedia.AssetGif(R.drawable.cs_banner),
             ),
             aggregatedLevel = 2,
             avatarUrl = null,
