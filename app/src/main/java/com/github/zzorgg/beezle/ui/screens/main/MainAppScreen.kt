@@ -458,7 +458,7 @@ fun MainAppScreenPreview() {
             walletState = WalletState(),
             bannerItems = listOf(
                 BannerMedia.RemoteImage("https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_5384f9f8b96a0b9934b2bc35a4058376211636d2.600x338.jpg?t=1695270428"),
-                BannerMedia.AssetGif("Pattern Recogni.gif")
+                BannerMedia.AssetGif("Maths.mp4")
             ),
             aggregatedLevel = 2,
             avatarUrl = null,
