@@ -4,17 +4,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.zzorgg.beezle.data.model.duel.DuelState
 import com.github.zzorgg.beezle.data.model.duel.DuelUser
+import com.github.zzorgg.beezle.data.repository.AuthRepository
 import com.github.zzorgg.beezle.data.repository.DuelRepository
+import com.github.zzorgg.beezle.data.repository.UserProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.random.Random
 
 @HiltViewModel
 class DuelViewModel @Inject constructor(
-    private val duelRepository: DuelRepository
+    private val duelRepository: DuelRepository,
+    private val userProfileRepository: UserProfileRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     val duelState: StateFlow<DuelState> = duelRepository.duelState
@@ -27,22 +30,26 @@ class DuelViewModel @Inject constructor(
         duelRepository.disconnect()
     }
 
-    fun startDuel(username: String) {
-        val user = DuelUser(
-            id = generateUserId(),
-            username = username
-        )
-
-        duelRepository.setCurrentUser(user)
-
-        if (!duelState.value.isConnected) {
-            connectToServer()
-        }
-
+    fun startDuel() {
         viewModelScope.launch {
-            // Wait a bit for connection if needed
-            delay(1000)
-            duelRepository.joinQueue(user)
+            authRepository.currentUser()?.let { firebaseUser ->
+
+                val user = DuelUser(
+                    id = firebaseUser.uid,
+                    username = firebaseUser.displayName ?: "No name",
+                    avatarUrl = firebaseUser.photoUrl.toString()
+                )
+
+                duelRepository.setCurrentUser(user)
+
+                if (!duelState.value.isConnected) {
+                    connectToServer()
+                }
+
+                // Wait a bit for connection if needed
+                delay(1000)
+                duelRepository.joinQueue(user)
+            }
         }
     }
 
@@ -66,10 +73,6 @@ class DuelViewModel @Inject constructor(
 
     fun clearLastRoundResult() {
         duelRepository.clearLastRoundResult()
-    }
-
-    private fun generateUserId(): String {
-        return "user_${System.currentTimeMillis()}_${Random.Default.nextInt(1000, 9999)}"
     }
 
     override fun onCleared() {

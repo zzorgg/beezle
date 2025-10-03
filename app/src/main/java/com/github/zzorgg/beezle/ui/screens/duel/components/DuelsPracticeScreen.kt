@@ -63,7 +63,7 @@ private fun generateCsQuestion(): Question {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DuelsScreen(navController: NavController, initialCategory: Category = Category.MATH) {
+fun DuelsPracticeScreen(navController: NavController, initialCategory: Category = Category.MATH) {
     var level by remember { mutableStateOf(1) }
     var current by remember { mutableStateOf<Question?>(null) }
     var userAnswer by remember { mutableStateOf("") }

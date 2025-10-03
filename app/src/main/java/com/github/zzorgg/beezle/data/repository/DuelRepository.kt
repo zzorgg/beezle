@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -120,11 +119,13 @@ class DuelRepository @Inject constructor(
                 // Create a DuelRoom from the match data
                 val player1 = DuelUser(
                     id = message.data.player_id,
-                    username = currentUser?.username ?: "Player"
+                    username = currentUser?.username ?: "Player",
+                    avatarUrl = currentUser?.avatarUrl
                 )
                 val player2 = DuelUser(
                     id = message.data.opponent_id,
-                    username = message.data.opponent_name
+                    username = message.data.opponent_name,
+                    avatarUrl = null // TODO Fetch opponent avatar
                 )
 
                 val room = DuelRoom(
@@ -341,10 +342,10 @@ class DuelRepository @Inject constructor(
     private fun startLocalBotMatch() {
         val user = currentUser ?: return
         localBotActive = true
-        val bot = DuelUser(id = "bot_${System.currentTimeMillis()}", username = "Bot")
+        val bot = DuelUser(id = "bot_${System.currentTimeMillis()}", username = "Bot", avatarUrl = null)
         val room = DuelRoom(
             id = "local_${System.currentTimeMillis()}",
-            player1 = DuelUser(id = user.id, username = user.username),
+            player1 = DuelUser(id = user.id, username = user.username, avatarUrl = user.avatarUrl),
             player2 = bot,
             status = DuelStatus.IN_PROGRESS
         )

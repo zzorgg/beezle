@@ -11,7 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.github.zzorgg.beezle.ui.screens.duel.DuelScreen
-import com.github.zzorgg.beezle.ui.screens.duel.components.DuelsScreen
+import com.github.zzorgg.beezle.ui.screens.duel.components.DuelsPracticeScreen
 import com.github.zzorgg.beezle.ui.screens.duel.components.Category
 import com.github.zzorgg.beezle.ui.screens.main.MainAppScreenRoot
 import com.github.zzorgg.beezle.ui.screens.onboarding.OnboardingScreen
@@ -85,7 +85,7 @@ class MainActivity : ComponentActivity() {
                     composable("practice/{subject}") { backStackEntry ->
                         val subject = backStackEntry.arguments?.getString("subject")?.uppercase() ?: "MATH"
                         val cat = if (subject == "CS") Category.CS else Category.MATH
-                        DuelsScreen(navController = navController, initialCategory = cat)
+                        DuelsPracticeScreen(navController = navController, initialCategory = cat)
                     }
                     composable("wallet") {
                         WalletScreenRoot(

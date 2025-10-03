@@ -35,7 +35,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
@@ -50,6 +49,7 @@ import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
 import com.github.zzorgg.beezle.ui.theme.*
 import com.google.firebase.auth.FirebaseAuth
 import com.github.zzorgg.beezle.R
+import com.github.zzorgg.beezle.ui.components.ProfileIcon
 
 private enum class Subject { MATH, CS }
 
@@ -117,29 +117,7 @@ fun MainAppScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(start = 8.dp)
                     ) {
-                        if (avatarUrl != null) {
-                            AsyncImage(
-                                model = avatarUrl,
-                                contentDescription = "Profile",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .clickable { navigateToCallback("profile") }
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.secondary,
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                                    .clickable { navigateToCallback("profile") }
-                                    .padding(8.dp)
-                            )
-                        }
+                        ProfileIcon(model = avatarUrl)
                         if (aggregatedLevel != null) {
                             Spacer(Modifier.width(8.dp))
                             LevelBadge("Level $aggregatedLevel")
@@ -445,7 +423,9 @@ fun MainAppScreen(
                         Text(
                             "Real-time competitive play",
 //                            color = MaterialTheme.colorScheme.secondary,
-                            color = (if (selectedSubject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary).copy(alpha = 0.85f),
+                            color = (if (selectedSubject == Subject.MATH) MaterialTheme.colorScheme.primary.copy(
+                                alpha = 0.85f
+                            ) else MaterialTheme.colorScheme.tertiary).copy(alpha = 0.85f),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -474,7 +454,9 @@ fun MainAppScreen(
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             "Single-player training & streaks",
-                            color = (if (selectedSubject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary).copy(alpha = 0.85f),
+                            color = (if (selectedSubject == Subject.MATH) MaterialTheme.colorScheme.primary.copy(
+                                alpha = 0.85f
+                            ) else MaterialTheme.colorScheme.tertiary).copy(alpha = 0.85f),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
