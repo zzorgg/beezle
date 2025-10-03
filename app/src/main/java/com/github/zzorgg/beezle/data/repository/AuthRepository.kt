@@ -1,5 +1,6 @@
 package com.github.zzorgg.beezle.data.repository
 
+import android.app.Activity
 import android.content.Context
 import android.util.Log
 import androidx.credentials.ClearCredentialStateRequest
@@ -25,7 +26,7 @@ private const val TAG = "FirebaseAuthRepository"
 interface AuthRepository {
     fun currentUser(): FirebaseUser?
 
-    suspend fun signin(): FirebaseUser?
+    suspend fun signin(activity: Activity): FirebaseUser?
 
     suspend fun signout()
 }
@@ -38,7 +39,7 @@ class FirebaseAuthRepository @Inject constructor(
 ) : AuthRepository {
     override fun currentUser(): FirebaseUser? = auth.currentUser
 
-    override suspend fun signin(): FirebaseUser? =
+    override suspend fun signin(activity: Activity): FirebaseUser? =
         try {
             val googleIdOption = GetGoogleIdOption.Builder()
                 .setServerClientId(context.getString(R.string.default_web_client_id))
@@ -49,7 +50,8 @@ class FirebaseAuthRepository @Inject constructor(
                 .addCredentialOption(googleIdOption)
                 .build()
 
-            val credential = credentialManager.getCredential(context, request).credential
+            // Use the Activity context instead of Application context
+            val credential = credentialManager.getCredential(activity, request).credential
 
             if (credential is CustomCredential && credential.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                 // Create Google ID Token

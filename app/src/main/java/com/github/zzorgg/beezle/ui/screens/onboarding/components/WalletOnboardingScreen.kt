@@ -14,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -39,7 +38,6 @@ fun WalletOnboardingScreen(
 ) {
     val walletManager: SolanaWalletManager = viewModel()
     val walletState by walletManager.walletState.collectAsState()
-    val context = LocalContext.current
 
     // Content animation
     val contentAlpha by animateFloatAsState(
@@ -47,13 +45,6 @@ fun WalletOnboardingScreen(
         animationSpec = tween(1000, delayMillis = 300),
         label = "content_alpha"
     )
-
-    // Show success message when connected
-    LaunchedEffect(walletState.isConnected) {
-        if (walletState.isConnected) {
-            onWalletConnected()
-        }
-    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
