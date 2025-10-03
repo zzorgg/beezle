@@ -423,7 +423,7 @@ fun MainAppScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { navigateToCallback("duels") },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -436,7 +436,7 @@ fun MainAppScreen(
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 "${subjectLabels[selectedSubject]} Duel Mode",
-                                color = MaterialTheme.colorScheme.primary,
+                                color = if (selectedSubject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
                                 fontWeight = FontWeight.SemiBold,
                                 style = MaterialTheme.typography.titleMedium
                             )
@@ -444,7 +444,8 @@ fun MainAppScreen(
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             "Real-time competitive play",
-                            color = MaterialTheme.colorScheme.secondary,
+//                            color = MaterialTheme.colorScheme.secondary,
+                            color = (if (selectedSubject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary).copy(alpha = 0.85f),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -453,7 +454,7 @@ fun MainAppScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { navigateToCallback("practice/${selectedSubject.name.lowercase()}") },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -466,14 +467,14 @@ fun MainAppScreen(
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 "${subjectLabels[selectedSubject]} Practice Mode",
-                                color = MaterialTheme.colorScheme.primary,
+                                color = if (selectedSubject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             "Single-player training & streaks",
-                            color = MaterialTheme.colorScheme.secondary,
+                            color = (if (selectedSubject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary).copy(alpha = 0.85f),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
