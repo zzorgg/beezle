@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity() {
                         MainAppScreenRoot(navController)
                     }
                     composable("profile") {
-                        ProfileScreenRoot(navController = navController)
+                        ProfileScreenRoot(navController = navController, sender = sender)
                     }
                     composable("duels") {
                         DuelScreen(

@@ -45,15 +45,16 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.text.AnnotatedString
 import kotlinx.coroutines.delay
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.ui.platform.LocalClipboardManager
+import kotlinx.coroutines.launch
+import android.content.ClipboardManager
+import android.content.ClipData
+import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreenRoot(navController: NavController) {
+fun ProfileScreenRoot(navController: NavController, sender: ActivityResultSender) {
     val context = LocalContext.current
     val activity = context as? Activity
 
@@ -63,6 +64,8 @@ fun ProfileScreenRoot(navController: NavController) {
     val profileViewModel: ProfileViewModel = hiltViewModel()
     val uiState by profileViewModel.profileViewState.collectAsStateWithLifecycle()
     val dataState by profileViewModel.profileDataState.collectAsStateWithLifecycle()
+
+    val scope = rememberCoroutineScope()
 
     // Track firebase user for display (name, email, photo)
     val firebaseUserState = remember { mutableStateOf<FirebaseUser?>(FirebaseAuth.getInstance().currentUser) }
@@ -117,9 +120,12 @@ fun ProfileScreenRoot(navController: NavController) {
                     showTick.value = false
                 },
                 walletState = walletState,
+                connectWalletCallback = { walletManager.connectWallet(sender) },
                 linkWalletCallback = {
                     if (walletState.publicKey != null) {
                         profileViewModel.linkWallet(walletState.publicKey!!)
+                        // Proactively refresh to reflect link in UI (hide Link button, update status)
+                        scope.launch { profileViewModel.refresh(walletState.publicKey) }
                     }
                 },
                 usernameInput = usernameInput,
@@ -159,6 +165,7 @@ fun ProfileScreen(
     walletState: WalletState,
     signInCallback: () -> Unit,
     signOutCallback: () -> Unit,
+    connectWalletCallback: () -> Unit,
     linkWalletCallback: () -> Unit,
     isEditingUsername: Boolean,
     usernameInput: String,
@@ -266,6 +273,7 @@ fun ProfileScreen(
                                     WalletCard(
                                         profile = profile,
                                         walletState = walletState,
+                                        connectWalletCallback = connectWalletCallback,
                                         linkWalletCallback = linkWalletCallback
                                     )
                                     Spacer(Modifier.height(24.dp))
@@ -418,15 +426,19 @@ private fun ProfileInfoCard(
 private fun WalletCard(
     profile: UserProfile,
     walletState: WalletState,
+    connectWalletCallback: () -> Unit,
     linkWalletCallback: () -> Unit,
 ) {
-    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+    val clipboard = remember(context) { context.getSystemService(ClipboardManager::class.java) }
+
     var copied by remember { mutableStateOf(false) }
     LaunchedEffect(copied) { if (copied) { delay(1500); copied = false } }
 
     val linkedAddress = profile.walletPublicKey
-    val connectedButUnlinkedAddress = if (linkedAddress == null && walletState.isConnected) walletState.publicKey else null
-    val activeAddress = linkedAddress ?: connectedButUnlinkedAddress
+    val isLinked = linkedAddress != null
+    val isConnected = walletState.isConnected
+    val connectedButUnlinkedAddress = if (isConnected && !isLinked) walletState.publicKey else null
 
     Card(
         modifier = Modifier
@@ -435,74 +447,100 @@ private fun WalletCard(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceDark)
     ) {
-        Box(Modifier.fillMaxSize()) {
-            // Subtle dots background
-            Canvas(modifier = Modifier.matchParentSize()) {
-                val step = 28.dp.toPx(); val radius = 2.dp.toPx(); val color = PrimaryBlue.copy(alpha = 0.05f)
-                var y = radius
-                while (y < size.height) {
-                    var x = radius
-                    while (x < size.width) {
-                        drawCircle(color, radius, androidx.compose.ui.geometry.Offset(x, y))
-                        x += step
-                    }
-                    y += step
+        if (!isConnected) {
+            // Disconnected: show left-side message + Connect button, and sleeping GIF on the right
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Wallet not connected", color = TextSecondary, fontSize = 18.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Connect your Phantom wallet to continue.", color = TextTertiary, fontSize = 12.sp)
+                    Spacer(Modifier.height(12.dp))
+                    Button(
+                        onClick = connectWalletCallback,
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue, contentColor = Color.White),
+                        shape = RoundedCornerShape(14.dp)
+                    ) { Text("Connect Wallet") }
                 }
+                Spacer(Modifier.width(16.dp))
+                AsyncImage(
+                    model = "file:///android_asset/sleeping.gif",
+                    contentDescription = "Wallet status animation",
+                    modifier = Modifier
+                        .size(110.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(SurfaceDark.copy(alpha = 0.4f))
+                )
             }
-            Column(Modifier.fillMaxWidth().padding(20.dp)) {
-                // Header row
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("WALLET", color = TextSecondary, fontSize = 12.sp, letterSpacing = 1.sp)
-                    Spacer(Modifier.weight(1f))
-                    when {
-                        linkedAddress != null -> Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = "Linked", tint = PrimaryBlue, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("Linked", color = PrimaryBlue, fontSize = 12.sp)
+        } else {
+            // Connected: normal content, but remove any 'Linked' status label
+            Box(Modifier.fillMaxSize()) {
+                // Subtle dots background
+                Canvas(modifier = Modifier.matchParentSize()) {
+                    val step = 28.dp.toPx(); val radius = 2.dp.toPx(); val color = PrimaryBlue.copy(alpha = 0.05f)
+                    var y = radius
+                    while (y < size.height) {
+                        var x = radius
+                        while (x < size.width) {
+                            drawCircle(color, radius, androidx.compose.ui.geometry.Offset(x, y))
+                            x += step
                         }
-                        else -> { /* No status text when not linked per request */ }
+                        y += step
                     }
                 }
-                Spacer(Modifier.height(16.dp))
+                Column(Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)) {
+                    // Header without status text
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("WALLET", color = TextSecondary, fontSize = 12.sp, letterSpacing = 1.sp)
+                    }
+                    Spacer(Modifier.height(16.dp))
 
-                // Main content row: Left info, Right GIF
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    // LEFT COLUMN
-                    Column(Modifier.weight(1f)) {
-                        if (activeAddress != null) {
-                            // Balance
-                            Text("Balance", color = TextSecondary, fontSize = 12.sp, letterSpacing = 0.5.sp)
-                            Spacer(Modifier.height(6.dp))
-                            val bal = walletState.balance
-                            if (bal != null) {
-                                Text(String.format("%.4f SOL", bal), color = TextPrimary, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
-                            } else {
+                    // Main content row: Left info, Right GIF
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        // LEFT COLUMN
+                        Column(Modifier.weight(1f)) {
+                            if (isLinked) {
+                                // Balance
+                                Text("Balance", color = TextSecondary, fontSize = 12.sp, letterSpacing = 0.5.sp)
+                                Spacer(Modifier.height(6.dp))
+                                val bal = walletState.balance
+                                if (bal != null) {
+                                    Text(String.format(java.util.Locale.US, "%.4f SOL", bal), color = TextPrimary, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
+                                } else {
+                                    Text("— SOL", color = TextSecondary, fontSize = 22.sp, fontWeight = FontWeight.Medium)
+                                }
+                                Spacer(Modifier.height(14.dp))
+                                // Copy chip (enabled only when connected+linked)
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = PrimaryBlue)
-                                    Spacer(Modifier.width(8.dp))
-                                    Text("Fetching...", color = TextSecondary, fontSize = 14.sp)
+                                    Row(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(30))
+                                            .clickable {
+                                                clipboard?.setPrimaryClip(ClipData.newPlainText("Wallet address", linkedAddress))
+                                                copied = true
+                                            }
+                                            .background(PrimaryBlue.copy(alpha = 0.15f))
+                                            .padding(horizontal = 18.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(Icons.Default.ContentCopy, contentDescription = if (copied) "Copied" else "Copy wallet address", tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(if (copied) "Copied" else "Copy", color = PrimaryBlue, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                    }
                                 }
-                            }
-                            Spacer(Modifier.height(14.dp))
-                            // Copy & link row / column arrangement
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Row(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(30))
-                                        .clickable {
-                                            clipboardManager.setText(AnnotatedString(activeAddress))
-                                            copied = true
-                                        }
-                                        .background(PrimaryBlue.copy(alpha = 0.15f))
-                                        .padding(horizontal = 18.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(Icons.Default.ContentCopy, contentDescription = if (copied) "Copied" else "Copy wallet address", tint = PrimaryBlue, modifier = Modifier.size(16.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(if (copied) "Copied" else "Copy", color = PrimaryBlue, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                                }
+                            } else {
+                                // Connected but not linked: suggest linking; no copy available
+                                Text("Wallet connected", color = TextSecondary, fontSize = 14.sp)
+                                Spacer(Modifier.height(6.dp))
+                                Text("Link your wallet to your Beezle profile.", color = TextTertiary, fontSize = 12.sp)
+                                Spacer(Modifier.height(12.dp))
                                 if (connectedButUnlinkedAddress != null) {
-                                    Spacer(Modifier.width(12.dp))
                                     Button(
                                         onClick = linkWalletCallback,
                                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue, contentColor = Color.White),
@@ -510,22 +548,18 @@ private fun WalletCard(
                                     ) { Text("Link Wallet") }
                                 }
                             }
-                        } else {
-                            Text("No wallet connected", color = TextSecondary, fontSize = 18.sp, fontWeight = FontWeight.Medium)
-                            Spacer(Modifier.height(6.dp))
-                            Text("Open Wallet tab to connect Phantom, then link here.", color = TextTertiary, fontSize = 12.sp)
                         }
+                        Spacer(Modifier.width(16.dp))
+                        // RIGHT GIF: phantom when linked, sleeping when not linked
+                        AsyncImage(
+                            model = if (isLinked) "file:///android_asset/phantom.gif" else "file:///android_asset/sleeping.gif",
+                            contentDescription = "Wallet status animation",
+                            modifier = Modifier
+                                .size(110.dp)
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(SurfaceDark.copy(alpha = 0.4f))
+                        )
                     }
-                    Spacer(Modifier.width(16.dp))
-                    // RIGHT GIF (square, larger)
-                    AsyncImage(
-                        model = "file:///android_asset/phantom.gif",
-                        contentDescription = "Phantom animation",
-                        modifier = Modifier
-                            .size(110.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(SurfaceDark.copy(alpha = 0.4f))
-                    )
                 }
             }
         }
@@ -543,6 +577,7 @@ private fun ProfileScreenPreview() {
             walletState = WalletState(),
             signInCallback = { },
             signOutCallback = {},
+            connectWalletCallback = {},
             linkWalletCallback = {},
             isEditingUsername = false,
             usernameInput = "",
@@ -573,6 +608,7 @@ private fun ProfileScreenPreview_SignedIn() {
             walletState = WalletState(),
             signInCallback = { },
             signOutCallback = {},
+            connectWalletCallback = {},
             linkWalletCallback = {},
             isEditingUsername = false,
             usernameInput = "",
