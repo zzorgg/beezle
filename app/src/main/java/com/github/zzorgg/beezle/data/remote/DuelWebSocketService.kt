@@ -6,6 +6,7 @@ import com.github.zzorgg.beezle.data.model.duel.WebSocketMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -24,64 +25,75 @@ import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import okio.ByteString
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class DuelWebSocketService @Inject constructor() {
 
-    private val client = OkHttpClient.Builder().build()
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(10, TimeUnit.SECONDS)
+        .pingInterval(20, TimeUnit.SECONDS)
+        .build()
+
     private var webSocket: WebSocket? = null
 
     private val _isConnected = MutableStateFlow(false)
     val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
 
-    private val _messageChannel = Channel<WebSocketMessage>(Channel.Factory.UNLIMITED)
+    private val _messageChannel = Channel<WebSocketMessage>(Channel.UNLIMITED)
     val messages: Flow<WebSocketMessage> = _messageChannel.receiveAsFlow()
 
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
-        classDiscriminator = "#type" // Change from default to avoid conflicts
+        isLenient = true
+        coerceInputValues = true
     }
 
     companion object {
         private const val TAG = "DuelWebSocketService"
-        // Use value provided via Gradle BuildConfig so it can differ per build type
         private val WS_URL: String = BuildConfig.WEBSOCKET_URL
+        private const val HEARTBEAT_INTERVAL_MS = 25_000L
+        private const val MAX_RECONNECT_ATTEMPTS = 5
+        private const val RECONNECT_DELAY_MS = 2000L
     }
 
     private var pingJob: Job? = null
-    private val serviceScope = CoroutineScope(Dispatchers.IO)
-    private val HEARTBEAT_INTERVAL_MS = 20_000L
+    private var reconnectJob: Job? = null
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var reconnectAttempts = 0
 
     fun connect() {
-        if (webSocket != null) {
+        if (webSocket != null && _isConnected.value) {
             Log.d(TAG, "WebSocket already connected")
             return
         }
 
         val request = Request.Builder()
             .url(WS_URL)
+            .addHeader("Origin", "playsock-mobile://app")
             .build()
 
+        Log.d(TAG, "Connecting to WebSocket: $WS_URL")
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
-                Log.d(TAG, "WebSocket connected")
+                Log.d(TAG, "✅ WebSocket connected successfully")
                 _isConnected.value = true
+                reconnectAttempts = 0
                 startHeartbeat()
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
-                Log.d(TAG, "Received message: $text")
+                Log.d(TAG, "📩 Received: $text")
                 try {
                     val element = json.parseToJsonElement(text)
                     val action = element.jsonObject["action"]?.jsonPrimitive?.content
+
                     when (action) {
-                        "join_queue" -> {
-                            val message = json.decodeFromString<WebSocketMessage.JoinQueue>(text)
-                            _messageChannel.trySend(message)
-                        }
                         "queued" -> {
                             val message = json.decodeFromString<WebSocketMessage.Queued>(text)
                             _messageChannel.trySend(message)
@@ -90,20 +102,16 @@ class DuelWebSocketService @Inject constructor() {
                             val message = json.decodeFromString<WebSocketMessage.MatchFound>(text)
                             _messageChannel.trySend(message)
                         }
-                        "question" -> {
-                            val message = json.decodeFromString<WebSocketMessage.QuestionReceived>(text)
+                        "score_update" -> {
+                            val message = json.decodeFromString<WebSocketMessage.ScoreUpdate>(text)
                             _messageChannel.trySend(message)
                         }
-                        "submit_answer" -> {
-                            val message = json.decodeFromString<WebSocketMessage.AnswerSubmitted>(text)
+                        "opponent_answer" -> {
+                            val message = json.decodeFromString<WebSocketMessage.OpponentAnswer>(text)
                             _messageChannel.trySend(message)
                         }
-                        "round_result" -> {
-                            val message = json.decodeFromString<WebSocketMessage.RoundResult>(text)
-                            _messageChannel.trySend(message)
-                        }
-                        "duel_complete" -> {
-                            val message = json.decodeFromString<WebSocketMessage.DuelComplete>(text)
+                        "game_over" -> {
+                            val message = json.decodeFromString<WebSocketMessage.GameOver>(text)
                             _messageChannel.trySend(message)
                         }
                         "opponent_left" -> {
@@ -115,29 +123,20 @@ class DuelWebSocketService @Inject constructor() {
                             _messageChannel.trySend(message)
                         }
                         "pong" -> {
-                            val message = json.decodeFromString<WebSocketMessage.Pong>(text)
-                            _messageChannel.trySend(message)
-                        }
-                        "ping" -> {
-                            // Optionally auto-respond with pong if needed in future
-                            Log.d(TAG, "Ping received (no auto-response implemented)")
-                        }
-                        "ready" -> {
-                            val message = json.decodeFromString<WebSocketMessage.Ready>(text)
-                            _messageChannel.trySend(message)
+                            Log.d(TAG, "❤️ Pong received")
                         }
                         null -> {
-                            Log.w(TAG, "Message missing action field: $text")
+                            Log.w(TAG, "⚠️ Message missing action field: $text")
                         }
                         else -> {
-                            Log.w(TAG, "Unknown action '$action': $text")
+                            Log.w(TAG, "⚠️ Unknown action '$action': $text")
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing message: $text", e)
+                    Log.e(TAG, "❌ Error parsing message: $text", e)
                     _messageChannel.trySend(
                         WebSocketMessage.Error(
-                            data = WebSocketMessage.ErrorData("Failed to parse message")
+                            data = WebSocketMessage.ErrorData("Failed to parse server message: ${e.message}")
                         )
                     )
                 }
@@ -148,20 +147,20 @@ class DuelWebSocketService @Inject constructor() {
             }
 
             override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-                Log.d(TAG, "WebSocket closing: $code $reason")
+                Log.d(TAG, "🔌 WebSocket closing: $code $reason")
                 _isConnected.value = false
                 stopHeartbeat()
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                Log.d(TAG, "WebSocket closed: $code $reason")
+                Log.d(TAG, "🔌 WebSocket closed: $code $reason")
                 _isConnected.value = false
                 this@DuelWebSocketService.webSocket = null
                 stopHeartbeat()
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                Log.e(TAG, "WebSocket error", t)
+                Log.e(TAG, "❌ WebSocket error", t)
                 _isConnected.value = false
                 _messageChannel.trySend(
                     WebSocketMessage.Error(
@@ -170,39 +169,53 @@ class DuelWebSocketService @Inject constructor() {
                 )
                 this@DuelWebSocketService.webSocket = null
                 stopHeartbeat()
+
+                // Auto-reconnect with exponential backoff
+                if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                    attemptReconnect()
+                }
             }
         })
+    }
+
+    private fun attemptReconnect() {
+        reconnectJob?.cancel()
+        reconnectJob = serviceScope.launch {
+            reconnectAttempts++
+            val delayMs = RECONNECT_DELAY_MS * reconnectAttempts
+            Log.d(TAG, "🔄 Reconnect attempt $reconnectAttempts in ${delayMs}ms")
+            delay(delayMs)
+            connect()
+        }
     }
 
     fun sendMessage(message: WebSocketMessage) {
         webSocket?.let { ws ->
             try {
-                // Create the JSON manually to ensure correct format
                 val jsonString = when (message) {
                     is WebSocketMessage.JoinQueue -> {
-                        """{"action":"join_queue","data":{"player_id":"${message.data.player_id}","display_name":"${message.data.display_name}"}}"""
+                        json.encodeToString(WebSocketMessage.JoinQueue.serializer(), message)
                     }
-                    is WebSocketMessage.AnswerSubmitted -> {
-                        """{"action":"submit_answer","data":{"player_id":"${message.data.player_id}","question_id":"${message.data.question_id}","answer_index":${message.data.answer_index}}}"""
+                    is WebSocketMessage.SubmitAnswer -> {
+                        json.encodeToString(WebSocketMessage.SubmitAnswer.serializer(), message)
                     }
                     else -> {
-                        // For other messages, use regular serialization
-                        json.encodeToString(message)
+                        json.encodeToString(WebSocketMessage.serializer(), message)
                     }
                 }
 
-                Log.d(TAG, "Sending message: $jsonString")
+                Log.d(TAG, "📤 Sending: $jsonString")
                 ws.send(jsonString)
             } catch (e: Exception) {
-                Log.e(TAG, "Error sending message", e)
+                Log.e(TAG, "❌ Error sending message", e)
                 _messageChannel.trySend(
                     WebSocketMessage.Error(
-                        data = WebSocketMessage.ErrorData("Failed to send message")
+                        data = WebSocketMessage.ErrorData("Failed to send message: ${e.message}")
                     )
                 )
             }
         } ?: run {
-            Log.w(TAG, "WebSocket not connected, cannot send message")
+            Log.w(TAG, "⚠️ WebSocket not connected, cannot send message")
             _messageChannel.trySend(
                 WebSocketMessage.Error(
                     data = WebSocketMessage.ErrorData("Not connected to server")
@@ -211,38 +224,17 @@ class DuelWebSocketService @Inject constructor() {
         }
     }
 
-    fun sendRaw(jsonString: String) {
-        webSocket?.let { ws ->
-            try {
-                Log.d(TAG, "Sending raw: $jsonString")
-                ws.send(jsonString)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error sending raw message", e)
-                _messageChannel.trySend(
-                    WebSocketMessage.Error(
-                        data = WebSocketMessage.ErrorData("Failed to send raw message")
-                    )
-                )
-            }
-        } ?: run {
-            Log.w(TAG, "WebSocket not connected, cannot send raw message")
-        }
-    }
-
     private fun startHeartbeat() {
         if (pingJob?.isActive == true) return
         pingJob = serviceScope.launch {
-            while (true) {
+            while (_isConnected.value) {
                 delay(HEARTBEAT_INTERVAL_MS)
-                if (_isConnected.value) {
-                    try {
-                        val pingJson = """{"action":"ping"}"""
-                        webSocket?.send(pingJson)
-                        Log.d(TAG, "Sent ping")
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to send ping", e)
-                    }
-                } else {
+                try {
+                    val pingJson = """{"action":"ping"}"""
+                    webSocket?.send(pingJson)
+                    Log.d(TAG, "💓 Ping sent")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Failed to send ping", e)
                     break
                 }
             }
@@ -254,20 +246,18 @@ class DuelWebSocketService @Inject constructor() {
         pingJob = null
     }
 
-    fun shutdown() {
-        stopHeartbeat()
-        serviceScope.cancel()
-    }
-
     fun disconnect() {
+        Log.d(TAG, "🔌 Disconnecting WebSocket")
+        reconnectJob?.cancel()
+        stopHeartbeat()
         webSocket?.close(1000, "Client disconnect")
         webSocket = null
         _isConnected.value = false
-        stopHeartbeat()
+        reconnectAttempts = 0
     }
 
-    fun reconnect() {
+    fun shutdown() {
         disconnect()
-        connect()
+        serviceScope.cancel()
     }
 }

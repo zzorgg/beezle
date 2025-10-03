@@ -400,7 +400,11 @@ fun MainAppScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { navigateToCallback("duels") },
+                        .clickable {
+                            // Navigate to duel screen with selected mode
+                            val mode = if (selectedSubject == Subject.MATH) "math" else "cs"
+                            navigateToCallback("duel/$mode")
+                        },
                     colors = CardDefaults.cardColors(containerColor = SurfaceDark)
                 ) {
                     Column(Modifier.padding(16.dp)) {

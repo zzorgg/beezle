@@ -8,6 +8,13 @@ data class DuelUser(
     val username: String
 )
 
+// Duel mode selection
+enum class DuelMode {
+    MATH,
+    CS,
+    GENERAL
+}
+
 @Serializable
 data class DuelRoom(
     val id: String,
@@ -16,7 +23,10 @@ data class DuelRoom(
     val status: DuelStatus,
     val currentQuestion: Question? = null,
     val timeRemaining: Int = 15,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val scores: Map<String, Int> = emptyMap(),
+    val betAmount: Double = 0.0,
+    val betToken: String = "SOL"
 )
 
 @Serializable
@@ -25,7 +35,8 @@ data class Question(
     val text: String,
     val options: List<String>,
     val correctAnswer: Int,
-    val timeLimit: Int = 15
+    val timeLimit: Int = 15,
+    val roundNumber: Int = 1
 )
 
 @Serializable
@@ -49,7 +60,9 @@ sealed class WebSocketMessage {
     @Serializable
     data class JoinQueueData(
         val player_id: String,
-        val display_name: String
+        val display_name: String,
+        val bet_amount: Double = 0.0,
+        val bet_token: String = "SOL"
     )
 
     @Serializable
@@ -61,60 +74,78 @@ sealed class WebSocketMessage {
     @Serializable
     data class MatchFoundData(
         val match_id: String,
+        val player_id: String,
         val opponent_id: String,
         val opponent_name: String,
-        val player_id: String
+        val bet_amount: Double,
+        val bet_token: String,
+        val queue_delta_ms: Long? = null
     )
 
     @Serializable
-    data class QuestionReceived(
-        val action: String = "question",
-        val data: QuestionData
+    data class ScoreUpdate(
+        val action: String = "score_update",
+        val data: ScoreUpdateData
     ) : WebSocketMessage()
 
     @Serializable
-    data class QuestionData(
+    data class ScoreUpdateData(
+        val match_id: String,
+        val scores: Map<String, Int>,
+        val updated_player_id: String,
+        val correct: Boolean,
         val question_id: String,
-        val question_text: String,
-        val options: List<String>,
-        val time_limit: Int
+        val round_number: Int
     )
 
     @Serializable
-    data class AnswerSubmitted(
-        val action: String = "submit_answer",
-        val data: AnswerData
+    data class OpponentAnswer(
+        val action: String = "opponent_answer",
+        val data: OpponentAnswerData
     ) : WebSocketMessage()
 
     @Serializable
-    data class AnswerData(
+    data class OpponentAnswerData(
+        val match_id: String,
         val player_id: String,
         val question_id: String,
-        val answer_index: Int
+        val answer: String,
+        val round_number: Int,
+        val correct: Boolean
     )
 
     @Serializable
-    data class RoundResult(
-        val action: String = "round_result",
-        val data: RoundResultData
+    data class SubmitAnswer(
+        val action: String = "submit_answer",
+        val data: SubmitAnswerData
     ) : WebSocketMessage()
 
     @Serializable
-    data class RoundResultData(
-        val player1_correct: Boolean?,
-        val player2_correct: Boolean?,
-        val correct_answer: Int
+    data class SubmitAnswerData(
+        val match_id: String,
+        val player_id: String,
+        val question_id: String,
+        val answer: String,
+        val correct: Boolean,
+        val score_delta: Int,
+        val final: Boolean = false,
+        val round_number: Int
     )
 
     @Serializable
-    data class DuelComplete(
-        val action: String = "duel_complete",
-        val data: DuelCompleteData
+    data class GameOver(
+        val action: String = "game_over",
+        val data: GameOverData
     ) : WebSocketMessage()
 
     @Serializable
-    data class DuelCompleteData(
-        val winner_id: String?
+    data class GameOverData(
+        val match_id: String,
+        val winner_id: String?,
+        val reason: String,
+        val scores: Map<String, Int>,
+        val bet_amount: Double,
+        val bet_token: String
     )
 
     @Serializable
@@ -125,7 +156,8 @@ sealed class WebSocketMessage {
 
     @Serializable
     data class OpponentLeftData(
-        val reason: String
+        val match_id: String,
+        val opponent_id: String
     )
 
     @Serializable
@@ -149,24 +181,6 @@ sealed class WebSocketMessage {
     data class QueuedData(
         val position: Int
     )
-
-    @Serializable
-    data class Ping(val action: String = "ping") : WebSocketMessage()
-
-    @Serializable
-    data class Pong(val action: String = "pong") : WebSocketMessage()
-
-    @Serializable
-    data class Ready(
-        val action: String = "ready",
-        val data: ReadyData
-    ) : WebSocketMessage() {
-        @Serializable
-        data class ReadyData(
-            val match_id: String,
-            val player_id: String
-        )
-    }
 }
 
 data class DuelState(
@@ -177,12 +191,18 @@ data class DuelState(
     val timeRemaining: Int = 15,
     val selectedAnswer: Int? = null,
     val hasAnswered: Boolean = false,
-    val lastRoundResult: WebSocketMessage.RoundResult? = null,
+    val lastGameResult: WebSocketMessage.GameOver? = null,
     val error: String? = null,
     val isSearching: Boolean = false,
     val connectionStatus: ConnectionStatus = ConnectionStatus.DISCONNECTED,
     val queuePosition: Int? = null,
-    val queueSince: Long? = null
+    val queueSince: Long? = null,
+    val selectedMode: DuelMode? = null,
+    val currentRound: Int = 0,
+    val totalRounds: Int = 5,
+    val myScore: Int = 0,
+    val opponentScore: Int = 0,
+    val opponentAnswered: Boolean = false
 )
 
 enum class ConnectionStatus {

@@ -10,6 +10,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.github.zzorgg.beezle.data.model.duel.DuelMode
 import com.github.zzorgg.beezle.ui.screens.duel.DuelScreen
 import com.github.zzorgg.beezle.ui.screens.duel.components.DuelsScreen
 import com.github.zzorgg.beezle.ui.screens.duel.components.Category
@@ -80,6 +81,20 @@ class MainActivity : ComponentActivity() {
                             onNavigateBack = {
                                 navController.popBackStack()
                             }
+                        )
+                    }
+                    composable("duel/{mode}") { backStackEntry ->
+                        val modeStr = backStackEntry.arguments?.getString("mode")?.uppercase() ?: "MATH"
+                        val mode = when (modeStr) {
+                            "CS" -> DuelMode.CS
+                            "MATH" -> DuelMode.MATH
+                            else -> DuelMode.MATH
+                        }
+                        DuelScreen(
+                            onNavigateBack = {
+                                navController.popBackStack()
+                            },
+                            initialMode = mode
                         )
                     }
                     composable("practice/{subject}") { backStackEntry ->
