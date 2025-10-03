@@ -1,5 +1,6 @@
 package com.github.zzorgg.beezle.ui.screens.main
 
+import android.content.res.Configuration
 import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.animateColorAsState
@@ -162,7 +163,11 @@ fun MainAppScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text("Wallet", color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp)
+                            Text(
+                                "Wallet",
+                                color = MaterialTheme.colorScheme.tertiary,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         }
                     } else {
                         Row(
@@ -180,7 +185,11 @@ fun MainAppScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text("Connect", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
+                            Text(
+                                "Connect",
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         }
                     }
                 }
@@ -198,7 +207,11 @@ fun MainAppScreen(
                         .align(Alignment.Center)
                         .clip(CircleShape),
                     shape = CircleShape,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.95f)),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(
+                            alpha = 0.95f
+                        )
+                    ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                 ) {
                     Row(
@@ -222,7 +235,11 @@ fun MainAppScreen(
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text("Duels", color = MaterialTheme.colorScheme.onPrimary, fontSize = 13.sp)
+                            Text(
+                                "Duels",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 13.sp
+                            )
                         }
                         // Profile
                         Row(
@@ -239,7 +256,11 @@ fun MainAppScreen(
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text("Profile", color = MaterialTheme.colorScheme.onPrimary, fontSize = 13.sp)
+                            Text(
+                                "Profile",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 13.sp
+                            )
                         }
                         // Wallet / Connect
                         Row(
@@ -258,7 +279,7 @@ fun MainAppScreen(
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 if (walletState.isConnected) "Wallet" else "Connect",
-                                color = if (walletState.isConnected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onPrimary,
+                                color = if (walletState.isConnected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
                                 fontSize = 13.sp
                             )
                         }
@@ -364,7 +385,8 @@ fun MainAppScreen(
             ) {
                 Subject.entries.forEach { subject ->
                     val selected = subject == selectedSubject
-                    val baseColor = if (subject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+                    val baseColor =
+                        if (subject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
                     val bgColor by animateColorAsState(
                         if (selected) baseColor.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceContainerLow,
                         label = "subjectBg"
@@ -383,7 +405,7 @@ fun MainAppScreen(
                         Text(
                             subjectLabels[subject]!!,
                             color = textColor,
-                            fontSize = 14.sp,
+                            style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -401,7 +423,7 @@ fun MainAppScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { navigateToCallback("duels") },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -414,19 +436,24 @@ fun MainAppScreen(
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 "${subjectLabels[selectedSubject]} Duel Mode",
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontWeight = FontWeight.SemiBold
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.titleMedium
                             )
                         }
                         Spacer(modifier = Modifier.height(6.dp))
-                        Text("Real-time competitive play", color = MaterialTheme.colorScheme.onSecondary, fontSize = 12.sp)
+                        Text(
+                            "Real-time competitive play",
+                            color = MaterialTheme.colorScheme.secondary,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { navigateToCallback("practice/${selectedSubject.name.lowercase()}") },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -439,15 +466,15 @@ fun MainAppScreen(
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 "${subjectLabels[selectedSubject]} Practice Mode",
-                                color = MaterialTheme.colorScheme.onPrimary,
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             "Single-player training & streaks",
-                            color = MaterialTheme.colorScheme.onSecondary,
-                            fontSize = 12.sp
+                            color = MaterialTheme.colorScheme.secondary,
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
@@ -457,7 +484,8 @@ fun MainAppScreen(
     }
 }
 
-@Preview
+@Preview(showSystemUi = true, showBackground = true)
+@Preview(showSystemUi = true, showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun MainAppScreenPreview() {
     BeezleTheme {

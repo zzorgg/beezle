@@ -193,27 +193,32 @@ fun ProfileScreen(
                         AuthStatus.Success -> {
                             val profile = dataState.userProfile!!
                             Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                             ) {
                                 Column(Modifier.padding(16.dp)) {
-                                    Text("Firebase UID", fontSize = 12.sp)
+                                    Text(
+                                        "Firebase UID",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
                                     Text(
                                         profile.uid.take(8) + "...",
 //                                        color = TextPrimary,
-                                        fontSize = 14.sp
+                                        style = MaterialTheme.typography.titleSmall
                                     )
                                     Spacer(Modifier.height(12.dp))
 
                                     // Wallet linking section
-                                    Text("Wallet", fontSize = 12.sp)
+                                    Text("Wallet", style = MaterialTheme.typography.bodyMedium)
                                     if (profile.walletPublicKey != null) {
                                         Text(
                                             profile.walletPublicKey.take(8) + "..." + profile.walletPublicKey.takeLast(
                                                 8
                                             ),
 //                                            color = TextPrimary,
-                                            fontSize = 14.sp
+                                            style = MaterialTheme.typography.titleSmall
                                         )
                                     } else {
                                         if (walletState.isConnected && !walletState.publicKey.isNullOrBlank()) {
@@ -224,7 +229,7 @@ fun ProfileScreen(
                                             Text(
                                                 "No wallet linked",
 //                                                color = TextSecondary,
-                                                fontSize = 14.sp
+                                                style = MaterialTheme.typography.titleSmall
                                             )
                                         }
                                     }
@@ -235,7 +240,7 @@ fun ProfileScreen(
                                             Text(
                                                 "Username",
 //                                                color = TextSecondary,
-                                                fontSize = 12.sp
+                                                style = MaterialTheme.typography.bodyMedium
                                             )
                                             if (isEditingUsername) {
                                                 OutlinedTextField(
@@ -270,7 +275,7 @@ fun ProfileScreen(
                                     Text(
                                         text = "Duels: ${profile.duelStats.wins}W / ${profile.duelStats.losses}L  (Win ${(profile.duelStats.winRate * 100).toInt()}%)",
 //                                        color = TextSecondary,
-                                        fontSize = 14.sp
+                                        style = MaterialTheme.typography.titleSmall
                                     )
                                 }
                             }
@@ -283,7 +288,7 @@ fun ProfileScreen(
             Text(
                 "Coming soon: on-chain duel history & escrow settlement.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 12.sp
+                style = MaterialTheme.typography.bodyMedium
             )
         }
     }

@@ -15,7 +15,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -27,10 +26,9 @@ fun AuthPrompt(
     modifier: Modifier = Modifier,
     onSignIn: () -> Unit
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier.fillMaxWidth()) {
         Text(
             "Sign in to create your profile",
-            color = MaterialTheme.colorScheme.onPrimary,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -40,7 +38,6 @@ fun AuthPrompt(
                 CircularProgressIndicator(
                     modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp,
-                    color = Color.White
                 )
                 Spacer(Modifier.width(8.dp))
             }
@@ -54,7 +51,7 @@ fun AuthPrompt(
 @Composable
 private fun AuthPromptPreview() {
     MaterialTheme {
-        AuthPrompt(true, modifier = Modifier.padding(top  = 20.dp)) { }
+        AuthPrompt(true, modifier = Modifier.padding(top  = 40.dp)) { }
     }
 }
 
@@ -63,6 +60,6 @@ private fun AuthPromptPreview() {
 @Composable
 private fun AuthPromptPreview2() {
     MaterialTheme {
-        AuthPrompt(false, modifier = Modifier.padding(top  = 20.dp)) { }
+        AuthPrompt(false, modifier = Modifier.padding(top  = 40.dp)) { }
     }
 }
