@@ -1,5 +1,6 @@
 package com.github.zzorgg.beezle.ui.screens.wallet
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,10 +21,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,23 +32,19 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.EphemeralGreenTick
-import com.github.zzorgg.beezle.ui.theme.AccentGreen
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
-import com.github.zzorgg.beezle.ui.theme.SurfaceDark
-import com.github.zzorgg.beezle.ui.theme.TextPrimary
-import com.github.zzorgg.beezle.ui.theme.TextSecondary
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
 @Composable
@@ -119,7 +116,6 @@ fun WalletScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = TextPrimary
                         )
                     }
                 }
@@ -129,22 +125,22 @@ fun WalletScreen(
         Column(
             modifier
                 .padding(it)
-                .padding(8.dp)
+                .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = SurfaceDark),
+                colors = CardDefaults.cardColors(),
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(16.dp),
                 ) {
                     Text(
                         text = "Wallet Status",
-                        fontSize = 18.sp,
+                        style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = TextPrimary
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -152,8 +148,8 @@ fun WalletScreen(
                     if (walletState.isConnected) {
                         Text(
                             text = "Connected to ${walletState.walletName}",
-                            color = AccentGreen,
-                            fontSize = 16.sp
+                            color = MaterialTheme.colorScheme.tertiary,
+                            style = MaterialTheme.typography.bodyLarge
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -164,31 +160,31 @@ fun WalletScreen(
                                     8
                                 )
                             }",
-                            color = TextSecondary,
-                            fontSize = 14.sp
+//                            color = TextSecondary,
+                            style = MaterialTheme.typography.bodyLarge
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
                             text = "Balance: ${walletState.balance ?: 0.0} SOL",
-                            color = TextPrimary,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
+//                            color = TextPrimary,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
                         )
                     } else {
                         Text(
                             text = "No wallet connected",
-                            color = Color.Red,
-                            fontSize = 16.sp
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.titleMedium
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
                             text = "Connect your Phantom wallet to get started",
-                            color = TextSecondary,
-                            fontSize = 14.sp
+//                            color = TextSecondary,
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                     Row(
@@ -234,8 +230,8 @@ fun WalletScreen(
             walletState.error?.let { error ->
                 Spacer(modifier = Modifier.height(16.dp))
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.1f))
+                    modifier = Modifier.fillMaxWidth(0.9f),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f))
                 ) {
                     Column(
                         modifier = Modifier
@@ -244,19 +240,19 @@ fun WalletScreen(
                     ) {
                         Text(
                             text = "Error",
-                            color = Color.Red,
-                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = error,
-                            color = Color.Red,
-                            fontSize = 14.sp
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyLarge
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        TextButton(onClick = clearErrorCallback) {
-                            Text("Dismiss", color = Color.Red)
+                        OutlinedButton(onClick = clearErrorCallback, modifier = Modifier.fillMaxWidth()) {
+                            Text("Dismiss", color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -284,11 +280,37 @@ fun WalletScreen(
 }
 
 @Preview
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun WalletScreenPreview() {
     BeezleTheme {
         WalletScreen(
             walletState = WalletState(),
+            connectWalletCallback = {},
+            disconnectWalletCallback = {},
+            clearErrorCallback = {},
+            testSignMessageCallback = {},
+            navigateBackCallback = {},
+        )
+    }
+}
+
+@Preview
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun WalletScreenPreview_Connected() {
+    BeezleTheme {
+        WalletScreen(
+            walletState = WalletState(
+                isConnected = true,
+                publicKey = "adsadadasad",
+                authToken = "adasdadsada",
+                walletName = "asdadsa",
+                balance = 12.0,
+                isLoading = false,
+                error = "null",
+                wasRestored = false
+            ),
             connectWalletCallback = {},
             disconnectWalletCallback = {},
             clearErrorCallback = {},

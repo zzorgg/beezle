@@ -16,7 +16,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import com.github.zzorgg.beezle.ui.theme.BackgroundDark
 
 @Composable
 fun SplashScreen(onFinished: () -> Unit) {
@@ -39,9 +38,7 @@ fun SplashScreen(onFinished: () -> Unit) {
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BackgroundDark),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         imageBitmap?.let { bmp ->

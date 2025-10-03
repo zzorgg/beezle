@@ -9,6 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,8 +21,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.github.zzorgg.beezle.data.model.duel.DuelState
 import com.github.zzorgg.beezle.data.model.duel.Question
-import com.github.zzorgg.beezle.ui.theme.PrimaryBlue
-import com.github.zzorgg.beezle.ui.theme.SurfaceDark
 
 @Composable
 fun GameplayScreen(
@@ -88,10 +88,12 @@ private fun TimerCircle(timeRemaining: Int) {
         modifier = Modifier.size(80.dp)
     ) {
         CircularProgressIndicator(
-            progress = progress,
+            progress = { progress },
             modifier = Modifier.fillMaxSize(),
             color = color,
-            strokeWidth = 6.dp
+            strokeWidth = 6.dp,
+            trackColor = ProgressIndicatorDefaults.circularIndeterminateTrackColor,
+            strokeCap = ProgressIndicatorDefaults.CircularDeterminateStrokeCap,
         )
 
         Text(
@@ -241,7 +243,7 @@ fun PlayerCard(
                     .size(60.dp)
                     .clip(CircleShape)
                     .background(
-                        if (isCurrentPlayer) PrimaryBlue else SurfaceDark
+                        if (isCurrentPlayer) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow
                     ),
                 contentAlignment = Alignment.Center
             ) {

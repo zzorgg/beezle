@@ -1,5 +1,6 @@
 package com.github.zzorgg.beezle.ui.screens.profile
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
@@ -24,13 +25,8 @@ import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.EphemeralGreenTick
 import com.github.zzorgg.beezle.ui.screens.profile.components.AuthPrompt
 import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
-import com.github.zzorgg.beezle.ui.theme.BeezleTheme
-import com.github.zzorgg.beezle.ui.theme.PrimaryBlue
-import com.github.zzorgg.beezle.ui.theme.SurfaceDark
-import com.github.zzorgg.beezle.ui.theme.TextPrimary
-import com.github.zzorgg.beezle.ui.theme.TextSecondary
-import com.github.zzorgg.beezle.ui.theme.TextTertiary
 import androidx.compose.runtime.saveable.rememberSaveable
+import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -140,7 +136,6 @@ fun ProfileScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = TextPrimary
                         )
                     }
                 },
@@ -149,7 +144,7 @@ fun ProfileScreen(
                         TextButton(onClick = signOutCallback) {
                             Text(
                                 "Sign out",
-                                color = PrimaryBlue
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
@@ -170,7 +165,7 @@ fun ProfileScreen(
 
                 AuthStatus.Loading -> {
                     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = PrimaryBlue)
+                        CircularProgressIndicator()
                     }
                 }
 
@@ -186,7 +181,7 @@ fun ProfileScreen(
                     when (uiState.userProfileStatus) {
                         AuthStatus.Waiting, AuthStatus.Loading -> {
                             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(color = PrimaryBlue)
+                                CircularProgressIndicator()
                             }
                         }
 
@@ -199,24 +194,26 @@ fun ProfileScreen(
                             val profile = dataState.userProfile!!
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = SurfaceDark)
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
                             ) {
                                 Column(Modifier.padding(16.dp)) {
-                                    Text("Firebase UID", color = TextSecondary, fontSize = 12.sp)
+                                    Text("Firebase UID", fontSize = 12.sp)
                                     Text(
                                         profile.uid.take(8) + "...",
-                                        color = TextPrimary,
+//                                        color = TextPrimary,
                                         fontSize = 14.sp
                                     )
                                     Spacer(Modifier.height(12.dp))
 
                                     // Wallet linking section
-                                    Text("Wallet", color = TextSecondary, fontSize = 12.sp)
+                                    Text("Wallet", fontSize = 12.sp)
                                     if (profile.walletPublicKey != null) {
                                         Text(
                                             profile.walletPublicKey.take(8) + "..." + profile.walletPublicKey.takeLast(
                                                 8
-                                            ), color = TextPrimary, fontSize = 14.sp
+                                            ),
+//                                            color = TextPrimary,
+                                            fontSize = 14.sp
                                         )
                                     } else {
                                         if (walletState.isConnected && !walletState.publicKey.isNullOrBlank()) {
@@ -226,7 +223,7 @@ fun ProfileScreen(
                                         } else {
                                             Text(
                                                 "No wallet linked",
-                                                color = TextSecondary,
+//                                                color = TextSecondary,
                                                 fontSize = 14.sp
                                             )
                                         }
@@ -237,7 +234,7 @@ fun ProfileScreen(
                                         Column(Modifier.weight(1f)) {
                                             Text(
                                                 "Username",
-                                                color = TextSecondary,
+//                                                color = TextSecondary,
                                                 fontSize = 12.sp
                                             )
                                             if (isEditingUsername) {
@@ -250,7 +247,7 @@ fun ProfileScreen(
                                             } else {
                                                 Text(
                                                     profile.username ?: "Not set",
-                                                    color = TextPrimary,
+//                                                    color = TextPrimary,
                                                     fontSize = 18.sp,
                                                     fontWeight = FontWeight.SemiBold
                                                 )
@@ -260,7 +257,7 @@ fun ProfileScreen(
                                             Icon(
                                                 Icons.Default.Edit,
                                                 contentDescription = null,
-                                                tint = PrimaryBlue
+                                                tint = MaterialTheme.colorScheme.primary
                                             )
                                         }
                                     }
@@ -272,7 +269,7 @@ fun ProfileScreen(
                                     Spacer(Modifier.height(12.dp))
                                     Text(
                                         text = "Duels: ${profile.duelStats.wins}W / ${profile.duelStats.losses}L  (Win ${(profile.duelStats.winRate * 100).toInt()}%)",
-                                        color = TextSecondary,
+//                                        color = TextSecondary,
                                         fontSize = 14.sp
                                     )
                                 }
@@ -285,7 +282,7 @@ fun ProfileScreen(
             Spacer(Modifier.height(24.dp))
             Text(
                 "Coming soon: on-chain duel history & escrow settlement.",
-                color = TextTertiary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp
             )
         }
@@ -293,6 +290,7 @@ fun ProfileScreen(
 }
 
 @Preview
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ProfileScreenPreview() {
     BeezleTheme {
@@ -313,6 +311,7 @@ private fun ProfileScreenPreview() {
 }
 
 @Preview
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ProfileScreenPreview_SignedIn() {
     BeezleTheme {

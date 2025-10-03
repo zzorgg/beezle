@@ -25,10 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.zzorgg.beezle.R
 import com.github.zzorgg.beezle.ui.screens.onboarding.components.OnboardingSlide
-import com.github.zzorgg.beezle.ui.theme.BackgroundDark
-import com.github.zzorgg.beezle.ui.theme.PrimaryBlue
-import com.github.zzorgg.beezle.ui.theme.TextSecondary
-import com.github.zzorgg.beezle.ui.theme.TextTertiary
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -46,7 +42,6 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = BackgroundDark
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -82,7 +77,7 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                                 modifier = Modifier
                                     .size(120.dp)
                                     .background(
-                                        color = PrimaryBlue,
+                                        color = MaterialTheme.colorScheme.primaryContainer,
                                         shape = CircleShape
                                     ),
                                 contentAlignment = Alignment.Center
@@ -131,7 +126,7 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                                     height = 8.dp
                                 )
                                 .background(
-                                    color = if (index == pagerState.currentPage) PrimaryBlue else TextTertiary,
+                                    color = if (index == pagerState.currentPage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onTertiary,
                                     shape = RoundedCornerShape(4.dp)
                                 )
                         )
@@ -158,7 +153,7 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                         ) {
                             Text(
                                 text = "Skip",
-                                color = TextSecondary,
+                                color = MaterialTheme.colorScheme.onSecondary,
                                 style = MaterialTheme.typography.bodyLarge
                             )
                         }
@@ -171,9 +166,7 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                                 }
                             },
                             modifier = Modifier.width(120.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = PrimaryBlue
-                            )
+//                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
@@ -195,9 +188,9 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                         Button(
                             onClick = onGetStarted,
                             modifier = Modifier.width(200.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = PrimaryBlue
-                            )
+//                            colors = ButtonDefaults.buttonColors(
+//                                containerColor = PrimaryBlue
+//                            )
                         ) {
                             Text(
                                 text = "Connect Wallet",

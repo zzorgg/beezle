@@ -12,8 +12,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.zzorgg.beezle.ui.theme.TextPrimary
-import com.github.zzorgg.beezle.ui.theme.TextSecondary
 
 @Composable
 fun OnboardingSlide(
@@ -52,7 +50,7 @@ fun OnboardingSlide(
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold
             ),
-            color = TextPrimary,
+            color = MaterialTheme.colorScheme.onPrimary,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
@@ -66,7 +64,7 @@ fun OnboardingSlide(
                 fontSize = 16.sp,
                 lineHeight = 24.sp
             ),
-            color = TextSecondary,
+            color = MaterialTheme.colorScheme.onSecondary,
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()

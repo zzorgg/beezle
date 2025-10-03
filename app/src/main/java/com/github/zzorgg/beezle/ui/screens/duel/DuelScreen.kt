@@ -22,8 +22,6 @@ import com.github.zzorgg.beezle.data.model.duel.DuelState
 import com.github.zzorgg.beezle.data.model.duel.ConnectionStatus
 import com.github.zzorgg.beezle.ui.screens.duel.components.GameplayScreen
 import com.github.zzorgg.beezle.ui.screens.duel.components.PlayerCard
-import com.github.zzorgg.beezle.ui.theme.BackgroundDark
-import com.github.zzorgg.beezle.ui.theme.PrimaryBlue
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,7 +51,6 @@ fun DuelScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(BackgroundDark)
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -232,7 +229,7 @@ private fun StartDuelScreen(onStartDuel: () -> Unit) {
                         .size(120.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = PrimaryBlue)
+                    CircularProgressIndicator()
                 }
             }
         }
@@ -264,7 +261,7 @@ private fun StartDuelScreen(onStartDuel: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth(0.7f)
                 .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+//            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
         ) {
             Text(
                 text = "START DUEL",
@@ -364,7 +361,7 @@ private fun SearchingScreen(
                 modifier = Modifier
                     .fillMaxWidth(0.7f)
                     .height(48.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+//                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
             ) {
                 Text(
                     text = "Cancel Search",

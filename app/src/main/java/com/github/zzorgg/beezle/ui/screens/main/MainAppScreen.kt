@@ -130,11 +130,11 @@ fun MainAppScreen(
                             Icon(
                                 imageVector = Icons.Default.Person,
                                 contentDescription = null,
-                                tint = PrimaryBlue,
+                                tint = MaterialTheme.colorScheme.secondary,
                                 modifier = Modifier
                                     .size(40.dp)
                                     .clip(CircleShape)
-                                    .background(PrimaryBlue.copy(alpha = 0.15f))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
                                     .clickable { navigateToCallback("profile") }
                                     .padding(8.dp)
                             )
@@ -150,7 +150,7 @@ fun MainAppScreen(
                         Row(
                             modifier = Modifier
                                 .clip(CircleShape)
-                                .background(AccentGreen.copy(alpha = 0.15f))
+                                .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f))
                                 .clickable { navigateToCallback("wallet") }
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -158,17 +158,17 @@ fun MainAppScreen(
                             Icon(
                                 imageVector = Icons.Default.AccountBalanceWallet,
                                 contentDescription = null,
-                                tint = AccentGreen,
+                                tint = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text("Wallet", color = AccentGreen, fontSize = 12.sp)
+                            Text("Wallet", color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp)
                         }
                     } else {
                         Row(
                             modifier = Modifier
                                 .clip(CircleShape)
-                                .background(PrimaryBlue.copy(alpha = 0.15f))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
                                 .clickable { navigateToCallback("wallet") }
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -176,11 +176,11 @@ fun MainAppScreen(
                             Icon(
                                 imageVector = Icons.Default.AccountBalanceWallet,
                                 contentDescription = null,
-                                tint = PrimaryBlue,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text("Connect", color = PrimaryBlue, fontSize = 12.sp)
+                            Text("Connect", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
                         }
                     }
                 }
@@ -198,7 +198,7 @@ fun MainAppScreen(
                         .align(Alignment.Center)
                         .clip(CircleShape),
                     shape = CircleShape,
-                    colors = CardDefaults.cardColors(containerColor = SurfaceDark.copy(alpha = 0.95f)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.95f)),
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                 ) {
                     Row(
@@ -218,11 +218,11 @@ fun MainAppScreen(
                             Icon(
                                 imageVector = Icons.Default.SportsMartialArts,
                                 contentDescription = "Duels",
-                                tint = PrimaryBlue,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text("Duels", color = TextPrimary, fontSize = 13.sp)
+                            Text("Duels", color = MaterialTheme.colorScheme.onPrimary, fontSize = 13.sp)
                         }
                         // Profile
                         Row(
@@ -235,11 +235,11 @@ fun MainAppScreen(
                             Icon(
                                 imageVector = Icons.Default.Person,
                                 contentDescription = "Profile",
-                                tint = PrimaryBlue,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text("Profile", color = TextPrimary, fontSize = 13.sp)
+                            Text("Profile", color = MaterialTheme.colorScheme.onPrimary, fontSize = 13.sp)
                         }
                         // Wallet / Connect
                         Row(
@@ -252,13 +252,13 @@ fun MainAppScreen(
                             Icon(
                                 imageVector = Icons.Default.AccountBalanceWallet,
                                 contentDescription = "Wallet",
-                                tint = if (walletState.isConnected) AccentGreen else PrimaryBlue,
+                                tint = if (walletState.isConnected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 if (walletState.isConnected) "Wallet" else "Connect",
-                                color = if (walletState.isConnected) AccentGreen else TextPrimary,
+                                color = if (walletState.isConnected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onPrimary,
                                 fontSize = 13.sp
                             )
                         }
@@ -364,9 +364,9 @@ fun MainAppScreen(
             ) {
                 Subject.entries.forEach { subject ->
                     val selected = subject == selectedSubject
-                    val baseColor = if (subject == Subject.MATH) PrimaryBlue else AccentGreen
+                    val baseColor = if (subject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
                     val bgColor by animateColorAsState(
-                        if (selected) baseColor.copy(alpha = 0.25f) else SurfaceDark,
+                        if (selected) baseColor.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceContainerLow,
                         label = "subjectBg"
                     )
                     val textColor by animateColorAsState(
@@ -401,52 +401,52 @@ fun MainAppScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { navigateToCallback("duels") },
-                    colors = CardDefaults.cardColors(containerColor = SurfaceDark)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.SportsMartialArts,
                                 contentDescription = null,
-                                tint = if (selectedSubject == Subject.MATH) PrimaryBlue else AccentGreen,
+                                tint = if (selectedSubject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.size(24.dp)
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 "${subjectLabels[selectedSubject]} Duel Mode",
-                                color = TextPrimary,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
                         Spacer(modifier = Modifier.height(6.dp))
-                        Text("Real-time competitive play", color = TextSecondary, fontSize = 12.sp)
+                        Text("Real-time competitive play", color = MaterialTheme.colorScheme.onSecondary, fontSize = 12.sp)
                     }
                 }
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { navigateToCallback("practice/${selectedSubject.name.lowercase()}") },
-                    colors = CardDefaults.cardColors(containerColor = SurfaceDark)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.Person,
                                 contentDescription = null,
-                                tint = if (selectedSubject == Subject.MATH) PrimaryBlue else AccentGreen,
+                                tint = if (selectedSubject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.size(24.dp)
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 "${subjectLabels[selectedSubject]} Practice Mode",
-                                color = TextPrimary,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             "Single-player training & streaks",
-                            color = TextSecondary,
+                            color = MaterialTheme.colorScheme.onSecondary,
                             fontSize = 12.sp
                         )
                     }

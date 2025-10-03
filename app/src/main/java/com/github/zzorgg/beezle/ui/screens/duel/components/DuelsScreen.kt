@@ -16,11 +16,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.github.zzorgg.beezle.ui.theme.BackgroundDark
-import com.github.zzorgg.beezle.ui.theme.PrimaryBlue
-import com.github.zzorgg.beezle.ui.theme.SurfaceDark
-import com.github.zzorgg.beezle.ui.theme.TextPrimary
-import com.github.zzorgg.beezle.ui.theme.TextSecondary
 import kotlin.random.Random
 
 enum class Category { MATH, CS }
@@ -84,7 +79,7 @@ fun DuelsScreen(navController: NavController, initialCategory: Category = Catego
 
     LaunchedEffect(Unit, category) { nextQuestion() }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = BackgroundDark) {
+    Surface(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -94,19 +89,19 @@ fun DuelsScreen(navController: NavController, initialCategory: Category = Catego
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = TextPrimary)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
                 }
                 Spacer(Modifier.width(4.dp))
                 Icon(
                     imageVector = Icons.Default.SportsMartialArts,
                     contentDescription = null,
-                    tint = PrimaryBlue,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(28.dp).padding(end = 8.dp)
                 )
-                Text("Duels Practice", color = TextPrimary, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Text("Duels Practice", color = MaterialTheme.colorScheme.onPrimary, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(12.dp))
-            Text("Prototype practice mode. Real-time matchmaking & escrow coming soon.", color = TextSecondary, fontSize = 12.sp)
+            Text("Prototype practice mode. Real-time matchmaking & escrow coming soon.", color = MaterialTheme.colorScheme.onSecondary, fontSize = 12.sp)
             Spacer(Modifier.height(24.dp))
 
             // Category Switch
@@ -117,11 +112,11 @@ fun DuelsScreen(navController: NavController, initialCategory: Category = Catego
             Spacer(Modifier.height(16.dp))
 
             current?.let { q ->
-                Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = SurfaceDark)) {
+                Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                     Column(Modifier.padding(16.dp)) {
-                        Text(if (q.category==Category.MATH) "Math Question (Level $level)" else "CS Concept", color = TextSecondary, fontSize = 12.sp)
+                        Text(if (q.category==Category.MATH) "Math Question (Level $level)" else "CS Concept", color = MaterialTheme.colorScheme.onSecondary, fontSize = 12.sp)
                         Spacer(Modifier.height(8.dp))
-                        Text(q.prompt, color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                        Text(q.prompt, color = MaterialTheme.colorScheme.onPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.height(16.dp))
                         OutlinedTextField(
                             value = userAnswer,
@@ -130,8 +125,8 @@ fun DuelsScreen(navController: NavController, initialCategory: Category = Catego
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = PrimaryBlue,
-                                focusedLabelColor = PrimaryBlue
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary
                             )
                         )
                         Spacer(Modifier.height(12.dp))
@@ -162,13 +157,13 @@ fun DuelsScreen(navController: NavController, initialCategory: Category = Catego
                 }
             }
             Spacer(Modifier.height(16.dp))
-            Card(colors = CardDefaults.cardColors(containerColor = SurfaceDark)) {
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("Session Stats", color = TextSecondary, fontSize = 12.sp)
+                    Text("Session Stats", color = MaterialTheme.colorScheme.onSecondary, fontSize = 12.sp)
                     Spacer(Modifier.height(8.dp))
-                    Text("Level: $level", color = TextPrimary)
-                    Text("Streak: $streak", color = TextPrimary)
-                    Text("Category: ${category.name}", color = TextPrimary)
+                    Text("Level: $level", color = MaterialTheme.colorScheme.onPrimary)
+                    Text("Streak: $streak", color = MaterialTheme.colorScheme.onPrimary)
+                    Text("Category: ${category.name}", color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         }

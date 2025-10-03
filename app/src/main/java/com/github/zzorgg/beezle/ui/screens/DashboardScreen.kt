@@ -21,14 +21,6 @@ import com.airbnb.lottie.compose.*
 import com.github.zzorgg.beezle.ui.components.ModernAvatar
 import com.github.zzorgg.beezle.ui.components.ModernCard
 import com.github.zzorgg.beezle.ui.components.StatsCard
-import com.github.zzorgg.beezle.ui.theme.AccentGreen
-import com.github.zzorgg.beezle.ui.theme.AccentPurple
-import com.github.zzorgg.beezle.ui.theme.AccentRed
-import com.github.zzorgg.beezle.ui.theme.BackgroundDark
-import com.github.zzorgg.beezle.ui.theme.PrimaryBlue
-import com.github.zzorgg.beezle.ui.theme.TextPrimary
-import com.github.zzorgg.beezle.ui.theme.TextSecondary
-import com.github.zzorgg.beezle.ui.theme.TextTertiary
 
 @Composable
 fun DashboardScreen() {
@@ -43,7 +35,6 @@ fun DashboardScreen() {
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = BackgroundDark
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Animated Background
@@ -83,18 +74,18 @@ fun DashboardScreen() {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = "Welcome back!",
-                                    color = TextSecondary,
+                                    color = MaterialTheme.colorScheme.onSecondary,
                                     fontSize = 14.sp
                                 )
                                 Text(
                                     text = "John Doe",
-                                    color = TextPrimary,
+                                    color = MaterialTheme.colorScheme.onPrimary,
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
                                     text = "Level 12 • 1,247 SOL earned",
-                                    color = PrimaryBlue,
+                                    color = MaterialTheme.colorScheme.primary,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium
                                 )
@@ -103,7 +94,7 @@ fun DashboardScreen() {
                             Icon(
                                 imageVector = Icons.Default.Notifications,
                                 contentDescription = null,
-                                tint = TextSecondary,
+                                tint = MaterialTheme.colorScheme.onSecondary,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -120,14 +111,14 @@ fun DashboardScreen() {
                             title = "Wins",
                             value = "127",
                             subtitle = "This month",
-                            color = AccentGreen,
+                            color = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.weight(1f)
                         )
                         StatsCard(
                             title = "SOL Earned",
                             value = "12.47",
                             subtitle = "Total",
-                            color = PrimaryBlue,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -137,7 +128,7 @@ fun DashboardScreen() {
                 item {
                     Text(
                         text = "Quick Actions",
-                        color = TextPrimary,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(vertical = 8.dp)
@@ -150,7 +141,7 @@ fun DashboardScreen() {
                         QuickActionCard(
                             title = "Quick Duel",
                             icon = Icons.Default.SportsMartialArts,
-                            color = PrimaryBlue,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.weight(1f)
                         ) {
                             // Quick duel action
@@ -159,7 +150,7 @@ fun DashboardScreen() {
                         QuickActionCard(
                             title = "Tournament",
                             icon = Icons.Default.EmojiEvents,
-                            color = AccentPurple,
+                            color = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.weight(1f)
                         ) {
                             // Tournament action
@@ -171,7 +162,7 @@ fun DashboardScreen() {
                 item {
                     Text(
                         text = "Recent Matches",
-                        color = TextPrimary,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(vertical = 8.dp)
@@ -237,7 +228,7 @@ fun QuickActionCard(
 
             Text(
                 text = title,
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onPrimary,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center
@@ -270,13 +261,13 @@ fun MatchHistoryCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "vs $opponent",
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
                     text = "$category • $time",
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSecondary,
                     fontSize = 12.sp
                 )
             }
@@ -287,16 +278,16 @@ fun MatchHistoryCard(
                 Text(
                     text = result,
                     color = when (result) {
-                        "Won" -> AccentGreen
-                        "Lost" -> AccentRed
-                        else -> TextSecondary
+                        "Won" -> MaterialTheme.colorScheme.onTertiary
+                        "Lost" -> MaterialTheme.colorScheme.onError
+                        else -> MaterialTheme.colorScheme.onSecondary
                     },
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = reward,
-                    color = TextTertiary,
+                    color = MaterialTheme.colorScheme.onTertiary,
                     fontSize = 12.sp
                 )
             }
