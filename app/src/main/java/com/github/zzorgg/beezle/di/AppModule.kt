@@ -60,9 +60,10 @@ class AppModule {
     @Provides
     @Singleton
     fun provideDuelRepository(
-        webSocketService: DuelWebSocketService
+        webSocketService: DuelWebSocketService,
+        authRepository: AuthRepository
     ): DuelRepository {
-        return DuelRepository(webSocketService)
+        return DuelRepository(webSocketService, authRepository)
     }
 
 

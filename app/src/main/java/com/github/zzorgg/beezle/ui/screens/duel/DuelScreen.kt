@@ -21,12 +21,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.airbnb.lottie.compose.*
 import com.github.zzorgg.beezle.data.model.duel.ConnectionStatus
 import com.github.zzorgg.beezle.data.model.duel.DuelMode
 import com.github.zzorgg.beezle.data.model.duel.DuelState
-import com.github.zzorgg.beezle.ui.theme.*
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,7 +63,7 @@ fun DuelScreen(
     }
 
     Scaffold(
-        containerColor = BackgroundDark
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -92,7 +91,7 @@ fun DuelScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                     Spacer(modifier = Modifier.weight(1f))
@@ -128,8 +127,9 @@ fun DuelScreen(
                         ModeSelectionScreen(
                             selectedMode = selectedMode,
                             onModeSelected = { selectedMode = it },
-                            onStartDuel = { username ->
-                                viewModel.startDuel(username, selectedMode)
+                            onStartDuel = {
+                                // Username ignored; repository will use Firebase display name
+                                viewModel.startDuel("", selectedMode)
                             },
                             isConnected = duelState.isConnected
                         )
@@ -145,7 +145,7 @@ fun DuelScreen(
                         .padding(16.dp)
                         .fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFE53935)
+                        containerColor = MaterialTheme.colorScheme.errorContainer
                     )
                 ) {
                     Row(
@@ -155,12 +155,12 @@ fun DuelScreen(
                         Icon(
                             Icons.Default.Warning,
                             contentDescription = null,
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onErrorContainer
                         )
                         Spacer(Modifier.width(12.dp))
                         Text(
                             text = error,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -172,10 +172,10 @@ fun DuelScreen(
 
 @Composable
 private fun ConnectionStatusIndicator(status: ConnectionStatus) {
-    val color = when (status) {
-        ConnectionStatus.CONNECTED -> AccentGreen
-        ConnectionStatus.CONNECTING, ConnectionStatus.RECONNECTING -> Color(0xFFFFA726)
-        ConnectionStatus.DISCONNECTED, ConnectionStatus.ERROR -> AccentRed
+    val dotColor = when (status) {
+        ConnectionStatus.CONNECTED -> MaterialTheme.colorScheme.tertiary
+        ConnectionStatus.CONNECTING, ConnectionStatus.RECONNECTING -> MaterialTheme.colorScheme.secondary
+        ConnectionStatus.DISCONNECTED, ConnectionStatus.ERROR -> MaterialTheme.colorScheme.error
     }
 
     val scale by animateFloatAsState(
@@ -191,7 +191,7 @@ private fun ConnectionStatusIndicator(status: ConnectionStatus) {
             .size(12.dp)
             .scale(scale)
             .clip(CircleShape)
-            .background(color)
+            .background(dotColor)
     )
 }
 
@@ -199,12 +199,9 @@ private fun ConnectionStatusIndicator(status: ConnectionStatus) {
 private fun ModeSelectionScreen(
     selectedMode: DuelMode,
     onModeSelected: (DuelMode) -> Unit,
-    onStartDuel: (String) -> Unit,
+    onStartDuel: () -> Unit,
     isConnected: Boolean
 ) {
-    var showUsernameDialog by remember { mutableStateOf(false) }
-    var username by remember { mutableStateOf("") }
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -231,7 +228,7 @@ private fun ModeSelectionScreen(
             text = "Choose Your Challenge",
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onBackground
             )
         )
 
@@ -240,7 +237,7 @@ private fun ModeSelectionScreen(
         Text(
             text = "Select a category and compete in real-time!",
             style = MaterialTheme.typography.bodyLarge.copy(
-                color = Color.White.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             ),
             textAlign = TextAlign.Center
         )
@@ -270,62 +267,29 @@ private fun ModeSelectionScreen(
 
         // Start Duel Button
         Button(
-            onClick = { showUsernameDialog = true },
+            onClick = onStartDuel,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (selectedMode == DuelMode.MATH) PrimaryBlue else AccentGreen
+                containerColor = if (selectedMode == DuelMode.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
             ),
             enabled = isConnected
         ) {
             Icon(
                 Icons.Default.SportsMartialArts,
                 contentDescription = null,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.onPrimary
             )
             Spacer(Modifier.width(8.dp))
             Text(
                 text = if (isConnected) "START DUEL" else "CONNECTING...",
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimary
             )
         }
-    }
-
-    // Username Dialog
-    if (showUsernameDialog) {
-        AlertDialog(
-            onDismissRequest = { showUsernameDialog = false },
-            title = { Text("Enter Your Name") },
-            text = {
-                OutlinedTextField(
-                    value = username,
-                    onValueChange = { username = it },
-                    label = { Text("Username") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (username.isNotBlank()) {
-                            showUsernameDialog = false
-                            onStartDuel(username.trim())
-                        }
-                    },
-                    enabled = username.isNotBlank()
-                ) {
-                    Text("START")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showUsernameDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
     }
 }
 
@@ -336,10 +300,10 @@ private fun ModeCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val color = when (mode) {
-        DuelMode.MATH -> PrimaryBlue
-        DuelMode.CS -> AccentGreen
-        DuelMode.GENERAL -> AccentPurple
+    val accentColor: Color = when (mode) {
+        DuelMode.MATH -> MaterialTheme.colorScheme.primary
+        DuelMode.CS -> MaterialTheme.colorScheme.tertiary
+        DuelMode.GENERAL -> MaterialTheme.colorScheme.secondary
     }
 
     val icon = when (mode) {
@@ -359,11 +323,11 @@ private fun ModeCard(
             .aspectRatio(1f)
             .clickable { onClick() }
             .then(
-                if (isSelected) Modifier.border(3.dp, color, RoundedCornerShape(16.dp))
+                if (isSelected) Modifier.border(3.dp, accentColor, RoundedCornerShape(16.dp))
                 else Modifier
             ),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) color.copy(alpha = 0.2f) else SurfaceDark
+            containerColor = if (isSelected) accentColor.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surface
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -377,13 +341,13 @@ private fun ModeCard(
             Icon(
                 icon,
                 contentDescription = null,
-                tint = color,
+                tint = accentColor,
                 modifier = Modifier.size(48.dp)
             )
             Spacer(Modifier.height(12.dp))
             Text(
                 text = label,
-                color = if (isSelected) color else TextPrimary,
+                color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                 textAlign = TextAlign.Center
             )
@@ -430,7 +394,7 @@ private fun SearchingScreen(
             text = "Finding Opponent...",
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onBackground
             )
         )
 
@@ -439,7 +403,7 @@ private fun SearchingScreen(
         if (queuePosition != null) {
             Text(
                 text = "Position in queue: #$queuePosition",
-                color = PrimaryBlue,
+                color = MaterialTheme.colorScheme.primary,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -448,7 +412,7 @@ private fun SearchingScreen(
         if (elapsedSeconds > 0) {
             Text(
                 text = "Waiting: ${elapsedSeconds}s",
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp
             )
         }
@@ -479,7 +443,7 @@ private fun MatchFoundScreen(duelState: DuelState) {
             text = "Match Found!",
             style = MaterialTheme.typography.headlineLarge.copy(
                 fontWeight = FontWeight.Bold,
-                color = AccentGreen
+                color = MaterialTheme.colorScheme.tertiary
             )
         )
 
@@ -500,7 +464,7 @@ private fun MatchFoundScreen(duelState: DuelState) {
                     text = "VS",
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
 
@@ -514,13 +478,13 @@ private fun MatchFoundScreen(duelState: DuelState) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        CircularProgressIndicator(color = PrimaryBlue)
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
             text = "Get ready...",
-            color = TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -538,15 +502,15 @@ private fun PlayerBadge(
             modifier = Modifier
                 .size(80.dp)
                 .clip(CircleShape)
-                .background(if (isYou) PrimaryBlue.copy(alpha = 0.2f) else AccentPurple.copy(alpha = 0.2f))
-                .border(2.dp, if (isYou) PrimaryBlue else AccentPurple, CircleShape),
+                .background((if (isYou) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary).copy(alpha = 0.2f))
+                .border(2.dp, if (isYou) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = name.take(2).uppercase(),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (isYou) PrimaryBlue else AccentPurple
+                color = if (isYou) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
             )
         }
 
@@ -555,21 +519,21 @@ private fun PlayerBadge(
         Text(
             text = name,
             fontWeight = FontWeight.Medium,
-            color = TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         if (isYou) {
             Text(
                 text = "(You)",
                 fontSize = 12.sp,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
         Text(
             text = "Score: $score",
             fontSize = 14.sp,
-            color = TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -597,21 +561,21 @@ private fun GameplayScreen(
             ScoreCard(
                 name = "You",
                 score = duelState.myScore,
-                color = PrimaryBlue,
+                color = MaterialTheme.colorScheme.primary,
                 hasAnswered = duelState.hasAnswered
             )
 
             Text(
                 text = "Round ${duelState.currentRound}/${duelState.totalRounds}",
                 style = MaterialTheme.typography.titleMedium.copy(
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
 
             ScoreCard(
                 name = "Opponent",
                 score = duelState.opponentScore,
-                color = AccentPurple,
+                color = MaterialTheme.colorScheme.secondary,
                 hasAnswered = duelState.opponentAnswered
             )
         }
@@ -626,14 +590,14 @@ private fun GameplayScreen(
         // Question
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = SurfaceDark)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(Modifier.padding(20.dp)) {
                 Text(
                     text = question.text,
                     style = MaterialTheme.typography.headlineSmall.copy(
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onSurface
                     ),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
@@ -647,7 +611,6 @@ private fun GameplayScreen(
         question.options.forEachIndexed { index, option ->
             AnswerButton(
                 text = option,
-                index = index,
                 isSelected = duelState.selectedAnswer == index,
                 isCorrect = duelState.hasAnswered && index == question.correctAnswer,
                 isWrong = duelState.hasAnswered && duelState.selectedAnswer == index && index != question.correctAnswer,
@@ -670,7 +633,7 @@ private fun ScoreCard(
         Text(
             text = name,
             fontSize = 12.sp,
-            color = TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = score.toString(),
@@ -682,7 +645,7 @@ private fun ScoreCard(
             Icon(
                 Icons.Default.Check,
                 contentDescription = "Answered",
-                tint = AccentGreen,
+                tint = MaterialTheme.colorScheme.tertiary,
                 modifier = Modifier.size(16.dp)
             )
         }
@@ -692,10 +655,10 @@ private fun ScoreCard(
 @Composable
 private fun TimerCircle(timeRemaining: Int) {
     val progress = timeRemaining / 15f
-    val color = when {
-        timeRemaining > 10 -> AccentGreen
-        timeRemaining > 5 -> Color(0xFFFFA726)
-        else -> AccentRed
+    val ringColor = when {
+        timeRemaining > 10 -> MaterialTheme.colorScheme.tertiary
+        timeRemaining > 5 -> MaterialTheme.colorScheme.secondary
+        else -> MaterialTheme.colorScheme.error
     }
 
     Box(
@@ -703,16 +666,16 @@ private fun TimerCircle(timeRemaining: Int) {
         modifier = Modifier.size(80.dp)
     ) {
         CircularProgressIndicator(
-            progress = progress,
+            progress = { progress },
             modifier = Modifier.fillMaxSize(),
-            color = color,
+            color = ringColor,
             strokeWidth = 6.dp
         )
         Text(
             text = timeRemaining.toString(),
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = color
+            color = ringColor
         )
     }
 }
@@ -720,24 +683,23 @@ private fun TimerCircle(timeRemaining: Int) {
 @Composable
 private fun AnswerButton(
     text: String,
-    index: Int,
     isSelected: Boolean,
     isCorrect: Boolean,
     isWrong: Boolean,
     enabled: Boolean,
     onClick: () -> Unit
 ) {
-    val backgroundColor = when {
-        isCorrect -> AccentGreen.copy(alpha = 0.3f)
-        isWrong -> AccentRed.copy(alpha = 0.3f)
-        isSelected -> PrimaryBlue.copy(alpha = 0.3f)
-        else -> SurfaceDark
+    val bg: Color = when {
+        isCorrect -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
+        isWrong -> MaterialTheme.colorScheme.error.copy(alpha = 0.3f)
+        isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+        else -> MaterialTheme.colorScheme.surface
     }
 
-    val borderColor = when {
-        isCorrect -> AccentGreen
-        isWrong -> AccentRed
-        isSelected -> PrimaryBlue
+    val border: Color = when {
+        isCorrect -> MaterialTheme.colorScheme.tertiary
+        isWrong -> MaterialTheme.colorScheme.error
+        isSelected -> MaterialTheme.colorScheme.primary
         else -> Color.Transparent
     }
 
@@ -746,10 +708,10 @@ private fun AnswerButton(
         modifier = Modifier
             .fillMaxWidth()
             .height(60.dp)
-            .then(if (borderColor != Color.Transparent) Modifier.border(2.dp, borderColor, RoundedCornerShape(12.dp)) else Modifier),
+            .then(if (border != Color.Transparent) Modifier.border(2.dp, border, RoundedCornerShape(12.dp)) else Modifier),
         colors = ButtonDefaults.buttonColors(
-            containerColor = backgroundColor,
-            disabledContainerColor = backgroundColor
+            containerColor = bg,
+            disabledContainerColor = bg
         ),
         enabled = enabled,
         shape = RoundedCornerShape(12.dp)
@@ -761,14 +723,14 @@ private fun AnswerButton(
         ) {
             Text(
                 text = text,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 16.sp,
                 modifier = Modifier.weight(1f)
             )
             if (isCorrect) {
-                Icon(Icons.Default.Check, contentDescription = null, tint = AccentGreen)
+                Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
             } else if (isWrong) {
-                Icon(Icons.Default.Close, contentDescription = null, tint = AccentRed)
+                Icon(Icons.Default.Close, contentDescription = null, tint = MaterialTheme.colorScheme.error)
             }
         }
     }
@@ -809,7 +771,7 @@ private fun GameOverDialog(
                         Text(
                             myScore.toString(),
                             fontSize = 32.sp,
-                            color = if (isWinner) AccentGreen else AccentRed,
+                            color = if (isWinner) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -818,7 +780,7 @@ private fun GameOverDialog(
                         Text(
                             opponentScore.toString(),
                             fontSize = 32.sp,
-                            color = if (!isWinner) AccentGreen else AccentRed,
+                            color = if (!isWinner) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -829,7 +791,7 @@ private fun GameOverDialog(
             Button(
                 onClick = onDismiss,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isWinner) AccentGreen else PrimaryBlue
+                    containerColor = if (isWinner) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text("Done")

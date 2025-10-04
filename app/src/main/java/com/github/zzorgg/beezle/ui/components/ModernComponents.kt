@@ -66,6 +66,9 @@ fun GradientButton(
         label = "button_scale"
     )
 
+    val bgColor = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
+    val onColor = if (enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onTertiary
+
     Button(
         onClick = onClick,
         modifier = modifier
@@ -83,9 +86,7 @@ fun GradientButton(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
-                ),
+                .background(bgColor),
             contentAlignment = Alignment.Center
         ) {
             Row(
@@ -95,7 +96,7 @@ fun GradientButton(
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
-                        color = Color.White,
+                        color = onColor,
                         strokeWidth = 2.dp
                     )
                 } else {
@@ -103,14 +104,14 @@ fun GradientButton(
                         Icon(
                             imageVector = it,
                             contentDescription = null,
-                            tint = Color.White,
+                            tint = onColor,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                     }
                     Text(
                         text = text,
-                        color = Color.White,
+                        color = onColor,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -188,7 +189,7 @@ fun ModernAvatar(
         if (imageUrl.isNullOrEmpty()) {
             Text(
                 text = name.take(2).uppercase(),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimary,
                 fontSize = (size * 0.4f).sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center

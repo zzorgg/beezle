@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -27,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.zzorgg.beezle.R
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
-import com.github.zzorgg.beezle.ui.theme.primaryBlue
 
 @Composable
 fun OnboardingSlide(
@@ -64,35 +62,37 @@ fun OnboardingSlide(
             modifier = Modifier.padding(bottom = 48.dp),
             contentAlignment = Alignment.Center
         ) {
+            val bg = MaterialTheme.colorScheme.primary
+            val onBg = MaterialTheme.colorScheme.onPrimary
             Box(
                 modifier = Modifier
                     .size(120.dp)
-                    .background(color = primaryBlue, shape = CircleShape)
+                    .background(color = bg, shape = CircleShape)
                     .clip(CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 when (pageIndex) {
                     0 -> Image(
-                        painter = painterResource(R.mipmap.main_icon_foreground),
+                        painter = painterResource(R.drawable.bee),
                         contentDescription = "Bee icon",
                         modifier = Modifier.scale(1.5f)
                     )
                     1 -> Icon(
                         imageVector = Icons.Default.SportsMartialArts,
                         contentDescription = "Duel icon",
-                        tint = Color.White,
+                        tint = onBg,
                         modifier = Modifier.size(72.dp)
                     )
                     2 -> Icon(
                         imageVector = Icons.Default.AccountBalanceWallet,
                         contentDescription = "Rewards wallet icon",
-                        tint = Color.White,
+                        tint = onBg,
                         modifier = Modifier.size(66.dp)
                     )
                     else -> Text(
                         text = "💰",
                         fontSize = 64.sp,
-                        color = Color.White
+                        color = onBg
                     )
                 }
             }

@@ -25,9 +25,7 @@ data class DuelRoom(
     val currentQuestion: Question? = null,
     val timeRemaining: Int = 15,
     val createdAt: Long = System.currentTimeMillis(),
-    val scores: Map<String, Int> = emptyMap(),
-    val betAmount: Double = 0.0,
-    val betToken: String = "SOL"
+    val scores: Map<String, Int> = emptyMap()
 )
 
 @Serializable
@@ -61,9 +59,7 @@ sealed class WebSocketMessage {
     @Serializable
     data class JoinQueueData(
         val player_id: String,
-        val display_name: String,
-        val bet_amount: Double = 0.0,
-        val bet_token: String = "SOL"
+        val display_name: String
     )
 
     @Serializable
@@ -78,8 +74,6 @@ sealed class WebSocketMessage {
         val player_id: String,
         val opponent_id: String,
         val opponent_name: String,
-        val bet_amount: Double,
-        val bet_token: String,
         val queue_delta_ms: Long? = null
     )
 
@@ -144,9 +138,7 @@ sealed class WebSocketMessage {
         val match_id: String,
         val winner_id: String?,
         val reason: String,
-        val scores: Map<String, Int>,
-        val bet_amount: Double,
-        val bet_token: String
+        val scores: Map<String, Int>
     )
 
     @Serializable

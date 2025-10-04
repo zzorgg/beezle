@@ -25,7 +25,8 @@ import kotlin.random.Random
 
 @Singleton
 class DuelRepository @Inject constructor(
-    private val webSocketService: DuelWebSocketService
+    private val webSocketService: DuelWebSocketService,
+    private val authRepository: AuthRepository
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -132,9 +133,7 @@ class DuelRepository @Inject constructor(
                     id = message.data.match_id,
                     player1 = player1,
                     player2 = player2,
-                    status = DuelStatus.IN_PROGRESS,
-                    betAmount = message.data.bet_amount,
-                    betToken = message.data.bet_token
+                    status = DuelStatus.IN_PROGRESS
                 )
 
                 _duelState.value = _duelState.value.copy(
@@ -210,10 +209,16 @@ class DuelRepository @Inject constructor(
 
             is WebSocketMessage.Error -> {
                 Log.e(TAG, "❌ Server error: ${message.data.message}")
+                val alreadyRegistered = message.data.message.contains("already registered", ignoreCase = true)
+                val unsupportedAction = message.data.message.contains("unsupported action", ignoreCase = true)
+                if (unsupportedAction) {
+                    // Server may respond with this to periodic ping/no-op messages; don't surface to UI
+                    return
+                }
                 _duelState.value = _duelState.value.copy(
-                    error = message.data.message,
-                    isInQueue = false,
-                    isSearching = false
+                    error = if (alreadyRegistered) null else message.data.message,
+                    isInQueue = if (alreadyRegistered) true else false,
+                    isSearching = if (alreadyRegistered) true else false
                 )
             }
 
@@ -296,10 +301,16 @@ class DuelRepository @Inject constructor(
     }
 
     fun startDuel(username: String, mode: DuelMode) {
+        // Use Firebase UID and display name when available
+        val fbUser = authRepository.currentUser()
+        val resolvedUsername = fbUser?.displayName?.takeIf { it.isNotBlank() } ?: username.ifBlank { "Player" }
+        val resolvedId = fbUser?.uid ?: generateUserId()
+        val avatar = fbUser?.photoUrl?.toString()
+
         val user = DuelUser(
-            id = generateUserId(),
-            username = username,
-            avatarUrl = null
+            id = resolvedId,
+            username = resolvedUsername,
+            avatarUrl = avatar
         )
 
         currentUser = user
@@ -333,6 +344,10 @@ class DuelRepository @Inject constructor(
             )
             return
         }
+        if (_duelState.value.isInQueue || _duelState.value.isSearching) {
+            Log.d(TAG, "🚫 Already queued/searching, skipping join_queue")
+            return
+        }
 
         val now = System.currentTimeMillis()
         _duelState.value = _duelState.value.copy(
@@ -345,9 +360,7 @@ class DuelRepository @Inject constructor(
 
         val joinQueueData = WebSocketMessage.JoinQueueData(
             player_id = user.id,
-            display_name = user.username,
-            bet_amount = 0.0,
-            bet_token = "SOL"
+            display_name = user.username
         )
 
         webSocketService.sendMessage(WebSocketMessage.JoinQueue(data = joinQueueData))

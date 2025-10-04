@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.zzorgg.beezle.ui.components.GradientButton
 import com.github.zzorgg.beezle.ui.components.ModernCard
-import androidx.compose.ui.graphics.Color
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
@@ -61,11 +60,13 @@ fun WalletOnboardingScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     // Wallet Icon with connection status
+                    val bgColor = if (walletState.isConnected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
+                    val iconTint = if (walletState.isConnected) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onPrimary
                     Box(
                         modifier = Modifier
                             .size(80.dp)
                             .background(
-                                color = if (walletState.isConnected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
+                                color = bgColor,
                                 shape = RoundedCornerShape(20.dp)
                             ),
                         contentAlignment = Alignment.Center
@@ -73,7 +74,7 @@ fun WalletOnboardingScreen(
                         Icon(
                             imageVector = if (walletState.isConnected) Icons.Default.CheckCircle else Icons.Default.AccountBalanceWallet,
                             contentDescription = null,
-                            tint = Color.White,
+                            tint = iconTint,
                             modifier = Modifier.size(40.dp)
                         )
                     }
@@ -94,7 +95,7 @@ fun WalletOnboardingScreen(
 
                     Text(
                         text = if (walletState.isConnected)
-                            "Your ${walletState.walletName} wallet is now connected to Beezle"
+                            "Your ${'$'}{walletState.walletName} wallet is now connected to Beezle"
                         else
                             "Connect your Solana wallet to start earning SOL through competitive duels",
                         style = MaterialTheme.typography.bodyLarge.copy(
@@ -140,7 +141,7 @@ fun WalletOnboardingScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "${walletState.balance ?: 0.0} SOL",
+                                text = "${'$'}{walletState.balance ?: 0.0} SOL",
                                 color = MaterialTheme.colorScheme.onPrimary,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
@@ -257,13 +258,13 @@ fun WalletOnboardingScreen(
                             Icon(
                                 imageVector = Icons.Default.Error,
                                 contentDescription = null,
-                                tint = Color.Red,
+                                tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 text = error,
-                                color = Color.Red,
+                                color = MaterialTheme.colorScheme.error,
                                 fontSize = 14.sp,
                                 modifier = Modifier.weight(1f)
                             )
@@ -364,7 +365,7 @@ fun WalletOnboardingScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.5f)),
+                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f)),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(

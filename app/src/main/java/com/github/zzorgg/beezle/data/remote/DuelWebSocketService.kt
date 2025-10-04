@@ -57,12 +57,10 @@ class DuelWebSocketService @Inject constructor() {
     companion object {
         private const val TAG = "DuelWebSocketService"
         private val WS_URL: String = BuildConfig.WEBSOCKET_URL
-        private const val HEARTBEAT_INTERVAL_MS = 25_000L
         private const val MAX_RECONNECT_ATTEMPTS = 5
         private const val RECONNECT_DELAY_MS = 2000L
     }
 
-    private var pingJob: Job? = null
     private var reconnectJob: Job? = null
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var reconnectAttempts = 0
@@ -84,7 +82,6 @@ class DuelWebSocketService @Inject constructor() {
                 Log.d(TAG, "✅ WebSocket connected successfully")
                 _isConnected.value = true
                 reconnectAttempts = 0
-                startHeartbeat()
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
@@ -122,9 +119,6 @@ class DuelWebSocketService @Inject constructor() {
                             val message = json.decodeFromString<WebSocketMessage.Error>(text)
                             _messageChannel.trySend(message)
                         }
-                        "pong" -> {
-                            Log.d(TAG, "❤️ Pong received")
-                        }
                         null -> {
                             Log.w(TAG, "⚠️ Message missing action field: $text")
                         }
@@ -149,14 +143,12 @@ class DuelWebSocketService @Inject constructor() {
             override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
                 Log.d(TAG, "🔌 WebSocket closing: $code $reason")
                 _isConnected.value = false
-                stopHeartbeat()
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 Log.d(TAG, "🔌 WebSocket closed: $code $reason")
                 _isConnected.value = false
                 this@DuelWebSocketService.webSocket = null
-                stopHeartbeat()
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
@@ -168,7 +160,6 @@ class DuelWebSocketService @Inject constructor() {
                     )
                 )
                 this@DuelWebSocketService.webSocket = null
-                stopHeartbeat()
 
                 // Auto-reconnect with exponential backoff
                 if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
@@ -224,32 +215,9 @@ class DuelWebSocketService @Inject constructor() {
         }
     }
 
-    private fun startHeartbeat() {
-        if (pingJob?.isActive == true) return
-        pingJob = serviceScope.launch {
-            while (_isConnected.value) {
-                delay(HEARTBEAT_INTERVAL_MS)
-                try {
-                    val pingJson = """{"action":"ping"}"""
-                    webSocket?.send(pingJson)
-                    Log.d(TAG, "💓 Ping sent")
-                } catch (e: Exception) {
-                    Log.e(TAG, "❌ Failed to send ping", e)
-                    break
-                }
-            }
-        }
-    }
-
-    private fun stopHeartbeat() {
-        pingJob?.cancel()
-        pingJob = null
-    }
-
     fun disconnect() {
         Log.d(TAG, "🔌 Disconnecting WebSocket")
         reconnectJob?.cancel()
-        stopHeartbeat()
         webSocket?.close(1000, "Client disconnect")
         webSocket = null
         _isConnected.value = false

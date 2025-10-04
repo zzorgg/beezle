@@ -20,7 +20,6 @@ import androidx.navigation.NavController
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -30,11 +29,6 @@ import com.github.zzorgg.beezle.ui.components.EphemeralGreenTick
 import com.github.zzorgg.beezle.ui.screens.profile.components.AuthPrompt
 import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
-import com.github.zzorgg.beezle.ui.theme.PrimaryBlue
-import com.github.zzorgg.beezle.ui.theme.SurfaceDark
-import com.github.zzorgg.beezle.ui.theme.TextPrimary
-import com.github.zzorgg.beezle.ui.theme.TextSecondary
-import com.github.zzorgg.beezle.ui.theme.TextTertiary
 import androidx.compose.runtime.saveable.rememberSaveable
 import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
@@ -183,7 +177,7 @@ fun ProfileScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = TextPrimary
+                            tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 },
@@ -211,7 +205,7 @@ fun ProfileScreen(
                 }
                 AuthStatus.Loading -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = PrimaryBlue)
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 }
                 is AuthStatus.Error -> {
@@ -223,7 +217,7 @@ fun ProfileScreen(
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(msg, color = Color.Red)
+                        Text(msg, color = MaterialTheme.colorScheme.error)
                         Spacer(Modifier.height(12.dp))
                         AuthPrompt(signingIn = false, onSignIn = signInCallback)
                     }
@@ -233,13 +227,13 @@ fun ProfileScreen(
                     when (uiState.userProfileStatus) {
                         AuthStatus.Waiting, AuthStatus.Loading -> {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(color = PrimaryBlue)
+                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                             }
                         }
                         is AuthStatus.Error -> {
                             val msg = uiState.userProfileStatus.message
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text(msg, color = Color.Red)
+                                Text(msg, color = MaterialTheme.colorScheme.error)
                             }
                         }
                         AuthStatus.Success -> {
@@ -276,21 +270,6 @@ fun ProfileScreen(
                                         connectWalletCallback = connectWalletCallback,
                                         linkWalletCallback = linkWalletCallback
                                     )
-                                    Spacer(Modifier.height(24.dp))
-                                    // Lottie animation (man.json) replacing old on-chain text line
-//                                    val lottieComposition by rememberLottieComposition(LottieCompositionSpec.Asset("man.json"))
-//                                    Box(
-//                                        modifier = Modifier
-//                                            .fillMaxWidth()
-//                                            .height(180.dp),
-//                                        contentAlignment = Alignment.Center
-//                                    ) {
-//                                        LottieAnimation(
-//                                            composition = lottieComposition,
-//                                            iterations = LottieConstants.IterateForever,
-//                                            modifier = Modifier.fillMaxHeight(0.9f)
-//                                        )
-//                                    }
                                     Spacer(Modifier.height(80.dp)) // space before button
                                 }
                                 // Logout button
@@ -304,8 +283,8 @@ fun ProfileScreen(
                                             .fillMaxWidth()
                                             .padding(horizontal = 8.dp),
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = PrimaryBlue,
-                                            contentColor = Color.White
+                                            containerColor = MaterialTheme.colorScheme.primary,
+                                            contentColor = MaterialTheme.colorScheme.onPrimary
                                         )
                                     ) {
                                         Text("Logout")
@@ -340,13 +319,13 @@ private fun HeroProfileSection(firebaseUser: FirebaseUser?, profile: UserProfile
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .border(2.dp, SurfaceDark, CircleShape) // updated to PrimaryBlue border per requirement
-                    .background(SurfaceDark.copy(alpha = 0.35f))
+                    .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape) // updated to PrimaryBlue border per requirement
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
             )
             Spacer(Modifier.height(14.dp))
             Text(
                 displayName,
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -354,7 +333,7 @@ private fun HeroProfileSection(firebaseUser: FirebaseUser?, profile: UserProfile
                 Spacer(Modifier.height(4.dp))
                 Text(
                     email,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp
                 )
             }
@@ -379,7 +358,7 @@ private fun ProfileInfoCard(
     Card(
         modifier = Modifier
             .fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = SurfaceDark)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(Modifier.padding(16.dp)) {
             // Removed 'Account' heading per request
@@ -398,7 +377,7 @@ private fun ProfileInfoCard(
                     } else {
                         Text(
                             profile.username ?: "Add a username",
-                            color = TextPrimary,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -408,14 +387,14 @@ private fun ProfileInfoCard(
                     Icon(
                         Icons.Default.Edit,
                         contentDescription = null,
-                        tint = PrimaryBlue
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }
             Spacer(Modifier.height(12.dp))
             Text(
                 text = "Duels: ${profile.duelStats.wins}W / ${profile.duelStats.losses}L  (Win ${(profile.duelStats.winRate * 100).toInt()}%)",
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp
             )
         }
@@ -445,7 +424,7 @@ private fun WalletCard(
             .fillMaxWidth()
             .defaultMinSize(minHeight = 190.dp),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceDark)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         if (!isConnected) {
             // Disconnected: show left-side message + Connect button, and sleeping GIF on the right
@@ -456,13 +435,13 @@ private fun WalletCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("Wallet not connected", color = TextSecondary, fontSize = 18.sp)
+                    Text("Wallet not connected", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 18.sp)
                     Spacer(Modifier.height(8.dp))
-                    Text("Connect your Phantom wallet to continue.", color = TextTertiary, fontSize = 12.sp)
+                    Text("Connect your Phantom wallet to continue.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                     Spacer(Modifier.height(12.dp))
                     Button(
                         onClick = connectWalletCallback,
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue, contentColor = Color.White),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                         shape = RoundedCornerShape(14.dp)
                     ) { Text("Connect Wallet") }
                 }
@@ -473,20 +452,23 @@ private fun WalletCard(
                     modifier = Modifier
                         .size(110.dp)
                         .clip(RoundedCornerShape(20.dp))
-                        .background(SurfaceDark.copy(alpha = 0.4f))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                 )
             }
         } else {
             // Connected: normal content, but remove any 'Linked' status label
             Box(Modifier.fillMaxSize()) {
+                // Precompute themed color outside Canvas draw scope
+                val gridColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
                 // Subtle dots background
                 Canvas(modifier = Modifier.matchParentSize()) {
-                    val step = 28.dp.toPx(); val radius = 2.dp.toPx(); val color = PrimaryBlue.copy(alpha = 0.05f)
+                    val step = 28.dp.toPx()
+                    val radius = 2.dp.toPx()
                     var y = radius
                     while (y < size.height) {
                         var x = radius
                         while (x < size.width) {
-                            drawCircle(color, radius, androidx.compose.ui.geometry.Offset(x, y))
+                            drawCircle(gridColor, radius, androidx.compose.ui.geometry.Offset(x, y))
                             x += step
                         }
                         y += step
@@ -497,7 +479,7 @@ private fun WalletCard(
                     .padding(20.dp)) {
                     // Header without status text
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text("WALLET", color = TextSecondary, fontSize = 12.sp, letterSpacing = 1.sp)
+                        Text("WALLET", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, letterSpacing = 1.sp)
                     }
                     Spacer(Modifier.height(16.dp))
 
@@ -507,13 +489,13 @@ private fun WalletCard(
                         Column(Modifier.weight(1f)) {
                             if (isLinked) {
                                 // Balance
-                                Text("Balance", color = TextSecondary, fontSize = 12.sp, letterSpacing = 0.5.sp)
+                                Text("Balance", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, letterSpacing = 0.5.sp)
                                 Spacer(Modifier.height(6.dp))
                                 val bal = walletState.balance
                                 if (bal != null) {
-                                    Text(String.format(java.util.Locale.US, "%.4f SOL", bal), color = TextPrimary, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
+                                    Text(String.format(java.util.Locale.US, "%.4f SOL", bal), color = MaterialTheme.colorScheme.onSurface, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
                                 } else {
-                                    Text("— SOL", color = TextSecondary, fontSize = 22.sp, fontWeight = FontWeight.Medium)
+                                    Text("— SOL", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 22.sp, fontWeight = FontWeight.Medium)
                                 }
                                 Spacer(Modifier.height(14.dp))
                                 // Copy chip (enabled only when connected+linked)
@@ -525,25 +507,25 @@ private fun WalletCard(
                                                 clipboard?.setPrimaryClip(ClipData.newPlainText("Wallet address", linkedAddress))
                                                 copied = true
                                             }
-                                            .background(PrimaryBlue.copy(alpha = 0.15f))
+                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
                                             .padding(horizontal = 18.dp, vertical = 10.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(Icons.Default.ContentCopy, contentDescription = if (copied) "Copied" else "Copy wallet address", tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Default.ContentCopy, contentDescription = if (copied) "Copied" else "Copy wallet address", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(6.dp))
-                                        Text(if (copied) "Copied" else "Copy", color = PrimaryBlue, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                        Text(if (copied) "Copied" else "Copy", color = MaterialTheme.colorScheme.primary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                                     }
                                 }
                             } else {
                                 // Connected but not linked: suggest linking; no copy available
-                                Text("Wallet connected", color = TextSecondary, fontSize = 14.sp)
+                                Text("Wallet connected", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                                 Spacer(Modifier.height(6.dp))
-                                Text("Link your wallet to your Beezle profile.", color = TextTertiary, fontSize = 12.sp)
+                                Text("Link your wallet to your Beezle profile.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                                 Spacer(Modifier.height(12.dp))
                                 if (connectedButUnlinkedAddress != null) {
                                     Button(
                                         onClick = linkWalletCallback,
-                                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue, contentColor = Color.White),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                                         shape = RoundedCornerShape(14.dp)
                                     ) { Text("Link Wallet") }
                                 }
@@ -557,7 +539,7 @@ private fun WalletCard(
                             modifier = Modifier
                                 .size(110.dp)
                                 .clip(RoundedCornerShape(20.dp))
-                                .background(SurfaceDark.copy(alpha = 0.4f))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                         )
                     }
                 }

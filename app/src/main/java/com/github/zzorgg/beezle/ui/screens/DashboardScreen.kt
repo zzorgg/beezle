@@ -22,6 +22,7 @@ import com.github.zzorgg.beezle.ui.components.ModernAvatar
 import com.github.zzorgg.beezle.ui.components.ModernCard
 import com.github.zzorgg.beezle.ui.components.StatsCard
 
+@Suppress("unused")
 @Composable
 fun DashboardScreen() {
     // Background animation
@@ -216,10 +217,16 @@ fun QuickActionCard(
                     ),
                 contentAlignment = Alignment.Center
             ) {
+                val onColor = when (color) {
+                    MaterialTheme.colorScheme.primary -> MaterialTheme.colorScheme.onPrimary
+                    MaterialTheme.colorScheme.secondary -> MaterialTheme.colorScheme.onSecondary
+                    MaterialTheme.colorScheme.tertiary -> MaterialTheme.colorScheme.onTertiary
+                    else -> MaterialTheme.colorScheme.onPrimary
+                }
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = onColor,
                     modifier = Modifier.size(24.dp)
                 )
             }

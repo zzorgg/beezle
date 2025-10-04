@@ -60,8 +60,9 @@ fun MonochromeAsyncImage(
             contentAlignment = Alignment.Center,
             modifier = alternateImageModifier.background(MaterialTheme.colorScheme.surfaceContainerHighest)
         ) {
+            // Use a raster drawable fallback instead of an adaptive mipmap to avoid runtime crash
             Image(
-                painter = painterResource(R.mipmap.main_icon_foreground),
+                painter = painterResource(R.drawable.bee),
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
             )

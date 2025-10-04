@@ -14,9 +14,9 @@ import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 
 /**
  * Ephemeral one-shot green tick animation. Plays once when visible becomes true,
@@ -47,7 +47,7 @@ fun EphemeralGreenTick(
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.45f)),
+                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.45f)),
             contentAlignment = Alignment.Center
         ) {
             // Subtle glowing container behind tick
@@ -55,7 +55,7 @@ fun EphemeralGreenTick(
                 modifier = Modifier
                     .size(220.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.15f))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f))
             )
             LottieAnimation(
                 composition = composition,

@@ -11,15 +11,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.github.zzorgg.beezle.ui.theme.PrimaryBlue
-import com.github.zzorgg.beezle.ui.theme.SurfaceDark
 
 // Legacy component - All gameplay logic has been moved to DuelScreen.kt
 // This file is kept only for the PlayerCard component used elsewhere
 
+@Suppress("unused")
 @Composable
 fun PlayerCard(
     username: String,
@@ -29,9 +27,9 @@ fun PlayerCard(
         modifier = Modifier.width(140.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isCurrentPlayer)
-                Color(0xFF1E3A8A).copy(alpha = 0.8f)
+                MaterialTheme.colorScheme.primaryContainer
             else
-                Color(0xFF1F2937).copy(alpha = 0.8f)
+                MaterialTheme.colorScheme.surface
         ),
         shape = RoundedCornerShape(20.dp)
     ) {
@@ -44,14 +42,14 @@ fun PlayerCard(
                     .size(60.dp)
                     .clip(CircleShape)
                     .background(
-                        if (isCurrentPlayer) PrimaryBlue else SurfaceDark
+                        if (isCurrentPlayer) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Default.Person,
                     contentDescription = "Player",
-                    tint = Color.White,
+                    tint = if (isCurrentPlayer) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(30.dp)
                 )
             }
@@ -61,7 +59,7 @@ fun PlayerCard(
             Text(
                 text = username,
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Medium
                 ),
                 maxLines = 1
@@ -72,7 +70,7 @@ fun PlayerCard(
                 Text(
                     text = "You",
                     style = MaterialTheme.typography.bodySmall.copy(
-                        color = Color(0xFF10B981),
+                        color = MaterialTheme.colorScheme.tertiary,
                         fontWeight = FontWeight.Bold
                     )
                 )

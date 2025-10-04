@@ -6,16 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Balance
 import androidx.compose.material.icons.filled.EmojiEvents
@@ -37,10 +28,9 @@ import androidx.compose.ui.unit.dp
 import com.github.zzorgg.beezle.data.model.duel.WebSocketMessage
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 
-
 @Composable
 fun DuelCompleteScreen(
-    finalResult: WebSocketMessage.DuelComplete,
+    finalResult: WebSocketMessage.GameOver,
     currentUserId: String,
     onPlayAgain: () -> Unit,
     onExit: () -> Unit
@@ -73,7 +63,6 @@ fun DuelCompleteScreen(
                     Icons.Default.EmojiEvents,
                     contentDescription = "Victory",
                     tint = MaterialTheme.colorScheme.tertiary,
-//                    tint = Color(0xFFFFD700),
                     modifier = Modifier
                         .size(120.dp)
                         .scale(scale)
@@ -86,7 +75,6 @@ fun DuelCompleteScreen(
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.tertiary
-//                    color = Color(0xFFFFD700),
                 )
 
                 Text(
@@ -129,7 +117,6 @@ fun DuelCompleteScreen(
                     Icons.Default.SentimentDissatisfied,
                     contentDescription = "Defeat",
                     tint = MaterialTheme.colorScheme.error,
-//                    tint = Color(0xFFEF4444),
                     modifier = Modifier
                         .size(120.dp)
                         .scale(scale)
@@ -142,7 +129,6 @@ fun DuelCompleteScreen(
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.error
-//                            color = Color(0xFFEF4444)
                 )
 
                 Text(
@@ -199,9 +185,12 @@ fun DuelCompleteScreen(
 private fun DuelCompleteScreenPreview() {
     BeezleTheme {
         DuelCompleteScreen(
-            finalResult = WebSocketMessage.DuelComplete(
-                data = WebSocketMessage.DuelCompleteData(
-                    winner_id = "same"
+            finalResult = WebSocketMessage.GameOver(
+                data = WebSocketMessage.GameOverData(
+                    match_id = "m1",
+                    winner_id = "same",
+                    reason = "time_up",
+                    scores = mapOf("same" to 5, "opponent" to 3)
                 )
             ),
             currentUserId = "same",
@@ -217,12 +206,15 @@ private fun DuelCompleteScreenPreview() {
 private fun DuelCompleteScreenDefeatPreview() {
     BeezleTheme {
         DuelCompleteScreen(
-            finalResult = WebSocketMessage.DuelComplete(
-                data = WebSocketMessage.DuelCompleteData(
-                    winner_id = "same"
+            finalResult = WebSocketMessage.GameOver(
+                data = WebSocketMessage.GameOverData(
+                    match_id = "m2",
+                    winner_id = "opponent",
+                    reason = "score",
+                    scores = mapOf("same" to 2, "opponent" to 4)
                 )
             ),
-            currentUserId = "notsame",
+            currentUserId = "same",
             onPlayAgain = {},
             onExit = {}
         )
@@ -235,12 +227,15 @@ private fun DuelCompleteScreenDefeatPreview() {
 private fun DuelCompleteScreenDrawPreview() {
     BeezleTheme {
         DuelCompleteScreen(
-            finalResult = WebSocketMessage.DuelComplete(
-                data = WebSocketMessage.DuelCompleteData(
-                    winner_id = null
+            finalResult = WebSocketMessage.GameOver(
+                data = WebSocketMessage.GameOverData(
+                    match_id = "m3",
+                    winner_id = null,
+                    reason = "draw",
+                    scores = mapOf("same" to 3, "opponent" to 3)
                 )
             ),
-            currentUserId = "notsame",
+            currentUserId = "same",
             onPlayAgain = {},
             onExit = {}
         )
