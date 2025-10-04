@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -72,9 +73,9 @@ fun OnboardingSlide(
             ) {
                 when (pageIndex) {
                     0 -> Image(
-                        painter = painterResource(R.drawable.bee),
+                        painter = painterResource(R.mipmap.main_icon_foreground),
                         contentDescription = "Bee icon",
-                        modifier = Modifier.size(120.dp)
+                        modifier = Modifier.scale(1.5f)
                     )
                     1 -> Icon(
                         imageVector = Icons.Default.SportsMartialArts,

@@ -61,7 +61,7 @@ fun MonochromeAsyncImage(
             modifier = alternateImageModifier.background(MaterialTheme.colorScheme.surfaceContainerHighest)
         ) {
             Image(
-                painter = painterResource(R.mipmap.ic_launcher),
+                painter = painterResource(R.mipmap.main_icon_foreground),
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
             )
