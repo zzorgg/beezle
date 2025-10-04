@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -29,9 +30,7 @@ import com.github.zzorgg.beezle.ui.theme.primaryBlue
 
 @Composable
 fun OnboardingSlide(
-    title: String,
-    description: String,
-    icon: @Composable () -> Unit,
+    pageIndex: Int,
     modifier: Modifier = Modifier
 ) {
     // Animation for slide content
@@ -41,6 +40,16 @@ fun OnboardingSlide(
         label = "slide_alpha"
     )
 
+    val title = when (pageIndex) {
+        0 -> "Welcome to Beezle"
+        1 -> "Compete & Win"
+        else -> "Earn SOL Rewards"
+    }
+    val description = when (pageIndex) {
+        0 -> "The ultimate Solana-powered duel platform. Compete in real-time challenges and earn SOL instantly."
+        1 -> "Challenge opponents worldwide. Answer questions under time pressure and prove your skills."
+        else -> "Every victory earns you SOL tokens. Fast, secure, and transparent payouts powered by Solana blockchain."
+    }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -54,7 +63,38 @@ fun OnboardingSlide(
             modifier = Modifier.padding(bottom = 48.dp),
             contentAlignment = Alignment.Center
         ) {
-            icon()
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .background(color = primaryBlue, shape = CircleShape)
+                    .clip(CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                when (pageIndex) {
+                    0 -> Image(
+                        painter = painterResource(R.drawable.bee),
+                        contentDescription = "Bee icon",
+                        modifier = Modifier.size(120.dp)
+                    )
+                    1 -> Icon(
+                        imageVector = Icons.Default.SportsMartialArts,
+                        contentDescription = "Duel icon",
+                        tint = Color.White,
+                        modifier = Modifier.size(72.dp)
+                    )
+                    2 -> Icon(
+                        imageVector = Icons.Default.AccountBalanceWallet,
+                        contentDescription = "Rewards wallet icon",
+                        tint = Color.White,
+                        modifier = Modifier.size(66.dp)
+                    )
+                    else -> Text(
+                        text = "💰",
+                        fontSize = 64.sp,
+                        color = Color.White
+                    )
+                }
+            }
         }
 
         // Title
@@ -83,63 +123,13 @@ fun OnboardingSlide(
     }
 }
 
-@Suppress("KotlinConstantConditions")
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun OnboardingSlidePreview() {
     BeezleTheme {
-        val page = 2
         OnboardingSlide(
-            title = when (page) {
-                0 -> "Welcome to Beezle"
-                1 -> "Compete & Win"
-                else -> "Earn SOL Rewards"
-            },
-            description = when (page) {
-                0 -> "The ultimate Solana-powered duel platform. Compete in real-time challenges and earn SOL instantly."
-                1 -> "Challenge opponents worldwide. Answer questions under time pressure and prove your skills."
-                else -> "Every victory earns you SOL tokens. Fast, secure, and transparent payouts powered by Solana blockchain."
-            },
-            icon = {
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .background(
-                            color = primaryBlue,
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    when (page) {
-                        0 -> Image(
-                            painter = painterResource(id = R.drawable.bee),
-                            contentDescription = "Bee icon",
-                            modifier = Modifier.size(80.dp)
-                        )
-
-                        1 -> Icon(
-                            imageVector = Icons.Default.SportsMartialArts,
-                            contentDescription = "Duel icon",
-                            tint = Color.White,
-                            modifier = Modifier.size(72.dp)
-                        )
-
-                        2 -> Icon(
-                            imageVector = Icons.Default.AccountBalanceWallet,
-                            contentDescription = "Rewards wallet icon",
-                            tint = Color.White,
-                            modifier = Modifier.size(66.dp)
-                        )
-
-                        else -> Text(
-                            text = "💰",
-                            fontSize = 64.sp,
-                            color = Color.White
-                        )
-                    }
-                }
-            }
+            pageIndex = 0
         )
     }
 }

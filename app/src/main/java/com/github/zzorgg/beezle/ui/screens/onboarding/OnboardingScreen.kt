@@ -1,34 +1,45 @@
 package com.github.zzorgg.beezle.ui.screens.onboarding
 
 import android.content.res.Configuration
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.SportsMartialArts
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.github.zzorgg.beezle.R
 import com.github.zzorgg.beezle.ui.screens.onboarding.components.OnboardingSlide
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
-import com.github.zzorgg.beezle.ui.theme.primaryBlue
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -65,54 +76,7 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                         .fillMaxWidth()
                         .weight(1f)
                 ) { page ->
-                    OnboardingSlide(
-                        title = when (page) {
-                            0 -> "Welcome to Beezle"
-                            1 -> "Compete & Win"
-                            else -> "Earn SOL Rewards"
-                        },
-                        description = when (page) {
-                            0 -> "The ultimate Solana-powered duel platform. Compete in real-time challenges and earn SOL instantly."
-                            1 -> "Challenge opponents worldwide. Answer questions under time pressure and prove your skills."
-                            else -> "Every victory earns you SOL tokens. Fast, secure, and transparent payouts powered by Solana blockchain."
-                        },
-                        icon = {
-                            Box(
-                                modifier = Modifier
-                                    .size(120.dp)
-                                    .background(
-                                        color = primaryBlue,
-                                        shape = CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                when (page) {
-                                    0 -> Image(
-                                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                                        contentDescription = "Bee icon",
-                                        modifier = Modifier.size(80.dp)
-                                    )
-                                    1 -> Icon(
-                                        imageVector = Icons.Default.SportsMartialArts,
-                                        contentDescription = "Duel icon",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(72.dp)
-                                    )
-                                    2 -> Icon(
-                                        imageVector = Icons.Default.AccountBalanceWallet,
-                                        contentDescription = "Rewards wallet icon",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(66.dp)
-                                    )
-                                    else -> Text(
-                                        text = "💰",
-                                        fontSize = 64.sp,
-                                        color = Color.White
-                                    )
-                                }
-                            }
-                        }
-                    )
+                    OnboardingSlide(pageIndex = page)
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -130,7 +94,7 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                                     height = 8.dp
                                 )
                                 .background(
-                                    color = if (index == pagerState.currentPage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onTertiary,
+                                    color = if (index == pagerState.currentPage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary,
                                     shape = RoundedCornerShape(4.dp)
                                 )
                         )
@@ -157,7 +121,6 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                         ) {
                             Text(
                                 text = "Skip",
-                                color = MaterialTheme.colorScheme.onSecondary,
                                 style = MaterialTheme.typography.bodyLarge
                             )
                         }
@@ -215,6 +178,6 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
 @Composable
 private fun OnboardingScreenPreview() {
     BeezleTheme {
-        OnboardingScreen {  }
+        OnboardingScreen { }
     }
 }
