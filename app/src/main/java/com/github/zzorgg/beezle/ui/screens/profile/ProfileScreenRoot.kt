@@ -1,13 +1,17 @@
 package com.github.zzorgg.beezle.ui.screens.profile
 
-import android.content.res.Configuration
+import android.app.Activity
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,18 +29,53 @@ import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.EphemeralGreenTick
 import com.github.zzorgg.beezle.ui.screens.profile.components.AuthPrompt
 import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
-import androidx.compose.runtime.saveable.rememberSaveable
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
+import com.github.zzorgg.beezle.ui.theme.PrimaryBlue
+import com.github.zzorgg.beezle.ui.theme.SurfaceDark
+import com.github.zzorgg.beezle.ui.theme.TextPrimary
+import com.github.zzorgg.beezle.ui.theme.TextSecondary
+import com.github.zzorgg.beezle.ui.theme.TextTertiary
+import androidx.compose.runtime.saveable.rememberSaveable
+import coil.compose.AsyncImage
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import kotlinx.coroutines.delay
+import androidx.compose.material.icons.filled.ContentCopy
+import kotlinx.coroutines.launch
+import android.content.ClipboardManager
+import android.content.ClipData
+import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreenRoot(navController: NavController) {
+fun ProfileScreenRoot(navController: NavController, sender: ActivityResultSender) {
+    val context = LocalContext.current
+    val activity = context as? Activity
+
     val walletManager: SolanaWalletManager = viewModel()
     val walletState by walletManager.walletState.collectAsState()
 
     val profileViewModel: ProfileViewModel = hiltViewModel()
     val uiState by profileViewModel.profileViewState.collectAsStateWithLifecycle()
     val dataState by profileViewModel.profileDataState.collectAsStateWithLifecycle()
+
+    val scope = rememberCoroutineScope()
+
+    // Track firebase user for display (name, email, photo)
+    val firebaseUserState = remember { mutableStateOf<FirebaseUser?>(FirebaseAuth.getInstance().currentUser) }
+    LaunchedEffect(uiState.firebaseAuthStatus) {
+        if (uiState.firebaseAuthStatus is AuthStatus.Success) {
+            firebaseUserState.value = FirebaseAuth.getInstance().currentUser
+        } else if (uiState.firebaseAuthStatus is AuthStatus.Waiting) {
+            firebaseUserState.value = null
+        }
+    }
 
     // When auth or wallet changes, refresh profile
     LaunchedEffect(walletState.publicKey, uiState.firebaseAuthStatus) {
@@ -65,10 +104,13 @@ fun ProfileScreenRoot(navController: NavController) {
             ProfileScreen(
                 uiState = uiState,
                 dataState = dataState,
+                firebaseUser = firebaseUserState.value,
                 signInCallback = {
-                    // Mark that a sign-in attempt was initiated
-                    signInInitiated.value = true
-                    profileViewModel.signin()
+                    if (activity != null) {
+                        // Mark that a sign-in attempt was initiated
+                        signInInitiated.value = true
+                        profileViewModel.signin(activity)
+                    }
                 },
                 signOutCallback = {
                     profileViewModel.signout()
@@ -78,9 +120,12 @@ fun ProfileScreenRoot(navController: NavController) {
                     showTick.value = false
                 },
                 walletState = walletState,
+                connectWalletCallback = { walletManager.connectWallet(sender) },
                 linkWalletCallback = {
                     if (walletState.publicKey != null) {
                         profileViewModel.linkWallet(walletState.publicKey!!)
+                        // Proactively refresh to reflect link in UI (hide Link button, update status)
+                        scope.launch { profileViewModel.refresh(walletState.publicKey) }
                     }
                 },
                 usernameInput = usernameInput,
@@ -94,7 +139,7 @@ fun ProfileScreenRoot(navController: NavController) {
                             profileViewModel.setUsername(usernameInput.trim())
                         }
                     } else {
-                        usernameInput = dataState.userProfile!!.username ?: ""
+                        dataState.userProfile?.username?.let { usernameInput = it }
                     }
                     editing = !editing
                 },
@@ -116,9 +161,11 @@ fun ProfileScreenRoot(navController: NavController) {
 fun ProfileScreen(
     uiState: ProfileViewState,
     dataState: ProfileDataState,
+    firebaseUser: FirebaseUser?,
     walletState: WalletState,
     signInCallback: () -> Unit,
     signOutCallback: () -> Unit,
+    connectWalletCallback: () -> Unit,
     linkWalletCallback: () -> Unit,
     isEditingUsername: Boolean,
     usernameInput: String,
@@ -136,175 +183,401 @@ fun ProfileScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
+                            tint = TextPrimary
                         )
                     }
                 },
-                actions = {
-                    if (uiState.firebaseAuthStatus is AuthStatus.Success) {
-                        TextButton(onClick = signOutCallback) {
-                            Text(
-                                "Sign out",
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
+                // Removed old sign-out action to move logout button to bottom per new design
+                actions = {}
             )
         },
     ) { innerPadding ->
-        Column(
+        Box(
             modifier = modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .padding(4.dp, 8.dp)
         ) {
             when (uiState.firebaseAuthStatus) {
                 AuthStatus.Waiting -> {
-                    AuthPrompt(signingIn = false, onSignIn = signInCallback)
-                }
-
-                AuthStatus.Loading -> {
-                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        AuthPrompt(signingIn = false, onSignIn = signInCallback)
                     }
                 }
-
+                AuthStatus.Loading -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = PrimaryBlue)
+                    }
+                }
                 is AuthStatus.Error -> {
                     val msg = uiState.firebaseAuthStatus.message
-                    Text(msg, color = Color.Red)
-                    Spacer(Modifier.height(12.dp))
-                    AuthPrompt(signingIn = false, onSignIn = signInCallback)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(msg, color = Color.Red)
+                        Spacer(Modifier.height(12.dp))
+                        AuthPrompt(signingIn = false, onSignIn = signInCallback)
+                    }
                 }
-
                 AuthStatus.Success -> {
-                    // Show profile states
+                    // Signed in UI
                     when (uiState.userProfileStatus) {
                         AuthStatus.Waiting, AuthStatus.Loading -> {
-                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator()
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = PrimaryBlue)
                             }
                         }
-
                         is AuthStatus.Error -> {
                             val msg = uiState.userProfileStatus.message
-                            Text(msg, color = Color.Red)
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(msg, color = Color.Red)
+                            }
                         }
-
                         AuthStatus.Success -> {
                             val profile = dataState.userProfile!!
-                            Card(
+                            // New layout: scrollable content + logout pinned bottom
+                            Column(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 4.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                                    .fillMaxSize()
+                                    .padding(horizontal = 12.dp),
+                                verticalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Column(Modifier.padding(16.dp)) {
-                                    Text(
-                                        "Firebase UID",
-                                        style = MaterialTheme.typography.bodyMedium
+                                // Scrollable area
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f, fill = true)
+                                        .padding(top = 8.dp)
+                                        .verticalScroll(rememberScrollState())
+                                ) {
+                                    // Hero Section
+                                    HeroProfileSection(firebaseUser, profile)
+                                    Spacer(Modifier.height(20.dp))
+                                    // Username editing & levels card
+                                    ProfileInfoCard(
+                                        profile = profile,
+                                        isEditingUsername = isEditingUsername,
+                                        usernameInput = usernameInput,
+                                        editUsernameCallback = editUsernameCallback,
+                                        editUsernameButtonCallback = editUsernameButtonCallback,
                                     )
-                                    Text(
-                                        profile.uid.take(8) + "...",
-//                                        color = TextPrimary,
-                                        style = MaterialTheme.typography.titleSmall
+                                    Spacer(Modifier.height(16.dp))
+                                    WalletCard(
+                                        profile = profile,
+                                        walletState = walletState,
+                                        connectWalletCallback = connectWalletCallback,
+                                        linkWalletCallback = linkWalletCallback
                                     )
-                                    Spacer(Modifier.height(12.dp))
-
-                                    // Wallet linking section
-                                    Text("Wallet", style = MaterialTheme.typography.bodyMedium)
-                                    if (profile.walletPublicKey != null) {
-                                        Text(
-                                            profile.walletPublicKey.take(8) + "..." + profile.walletPublicKey.takeLast(
-                                                8
-                                            ),
-//                                            color = TextPrimary,
-                                            style = MaterialTheme.typography.titleSmall
+                                    Spacer(Modifier.height(24.dp))
+                                    // Lottie animation (man.json) replacing old on-chain text line
+//                                    val lottieComposition by rememberLottieComposition(LottieCompositionSpec.Asset("man.json"))
+//                                    Box(
+//                                        modifier = Modifier
+//                                            .fillMaxWidth()
+//                                            .height(180.dp),
+//                                        contentAlignment = Alignment.Center
+//                                    ) {
+//                                        LottieAnimation(
+//                                            composition = lottieComposition,
+//                                            iterations = LottieConstants.IterateForever,
+//                                            modifier = Modifier.fillMaxHeight(0.9f)
+//                                        )
+//                                    }
+                                    Spacer(Modifier.height(80.dp)) // space before button
+                                }
+                                // Logout button
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Button(
+                                        onClick = signOutCallback,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 8.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = PrimaryBlue,
+                                            contentColor = Color.White
                                         )
-                                    } else {
-                                        if (walletState.isConnected && !walletState.publicKey.isNullOrBlank()) {
-                                            Button(onClick = linkWalletCallback) {
-                                                Text("Link Connected Wallet")
-                                            }
-                                        } else {
-                                            Text(
-                                                "No wallet linked",
-//                                                color = TextSecondary,
-                                                style = MaterialTheme.typography.titleSmall
-                                            )
-                                        }
+                                    ) {
+                                        Text("Logout")
                                     }
                                     Spacer(Modifier.height(12.dp))
-
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Column(Modifier.weight(1f)) {
-                                            Text(
-                                                "Username",
-//                                                color = TextSecondary,
-                                                style = MaterialTheme.typography.bodyMedium
-                                            )
-                                            if (isEditingUsername) {
-                                                OutlinedTextField(
-                                                    value = usernameInput,
-                                                    onValueChange = editUsernameCallback,
-                                                    singleLine = true,
-                                                    modifier = Modifier.fillMaxWidth()
-                                                )
-                                            } else {
-                                                Text(
-                                                    profile.username ?: "Not set",
-//                                                    color = TextPrimary,
-                                                    fontSize = 18.sp,
-                                                    fontWeight = FontWeight.SemiBold
-                                                )
-                                            }
-                                        }
-                                        IconButton(onClick = editUsernameButtonCallback) {
-                                            Icon(
-                                                Icons.Default.Edit,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-                                    }
-                                    Spacer(Modifier.height(12.dp))
-                                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                        LevelBadge("Math Lv ${profile.mathLevel}")
-                                        LevelBadge("CS Lv ${profile.csLevel}")
-                                    }
-                                    Spacer(Modifier.height(12.dp))
-                                    Text(
-                                        text = "Duels: ${profile.duelStats.wins}W / ${profile.duelStats.losses}L  (Win ${(profile.duelStats.winRate * 100).toInt()}%)",
-//                                        color = TextSecondary,
-                                        style = MaterialTheme.typography.titleSmall
-                                    )
                                 }
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
 
-            Spacer(Modifier.height(24.dp))
+// Hero Section displaying circular photo, name & email
+@Composable
+private fun HeroProfileSection(firebaseUser: FirebaseUser?, profile: UserProfile) {
+    val displayName = firebaseUser?.displayName ?: profile.username ?: "Anonymous"
+    val email = firebaseUser?.email ?: "" // email may be null for some providers
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp, bottom = 8.dp),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            AsyncImage(
+                model = firebaseUser?.photoUrl,
+                contentDescription = "Profile picture",
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .border(2.dp, SurfaceDark, CircleShape) // updated to PrimaryBlue border per requirement
+                    .background(SurfaceDark.copy(alpha = 0.35f))
+            )
+            Spacer(Modifier.height(14.dp))
             Text(
-                "Coming soon: on-chain duel history & escrow settlement.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium
+                displayName,
+                color = TextPrimary,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            if (email.isNotBlank()) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    email,
+                    color = TextSecondary,
+                    fontSize = 14.sp
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            // Levels inline quick glance
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                LevelBadge("Math Lv ${profile.mathLevel}")
+                LevelBadge("CS Lv ${profile.csLevel}")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileInfoCard(
+    profile: UserProfile,
+    isEditingUsername: Boolean,
+    usernameInput: String,
+    editUsernameCallback: (String) -> Unit,
+    editUsernameButtonCallback: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = SurfaceDark)
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            // Removed 'Account' heading per request
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    // Removed explicit "Username" label to streamline (optional). If needed keep below line commented
+                    // Text("Username", color = TextSecondary, fontSize = 12.sp)
+                    if (isEditingUsername) {
+                        OutlinedTextField(
+                            value = usernameInput,
+                            onValueChange = editUsernameCallback,
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Username") }
+                        )
+                    } else {
+                        Text(
+                            profile.username ?: "Add a username",
+                            color = TextPrimary,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+                IconButton(onClick = editUsernameButtonCallback) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = null,
+                        tint = PrimaryBlue
+                    )
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "Duels: ${profile.duelStats.wins}W / ${profile.duelStats.losses}L  (Win ${(profile.duelStats.winRate * 100).toInt()}%)",
+                color = TextSecondary,
+                fontSize = 14.sp
             )
         }
     }
 }
 
+@Composable
+private fun WalletCard(
+    profile: UserProfile,
+    walletState: WalletState,
+    connectWalletCallback: () -> Unit,
+    linkWalletCallback: () -> Unit,
+) {
+    val context = LocalContext.current
+    val clipboard = remember(context) { context.getSystemService(ClipboardManager::class.java) }
+
+    var copied by remember { mutableStateOf(false) }
+    LaunchedEffect(copied) { if (copied) { delay(1500); copied = false } }
+
+    val linkedAddress = profile.walletPublicKey
+    val isLinked = linkedAddress != null
+    val isConnected = walletState.isConnected
+    val connectedButUnlinkedAddress = if (isConnected && !isLinked) walletState.publicKey else null
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 190.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceDark)
+    ) {
+        if (!isConnected) {
+            // Disconnected: show left-side message + Connect button, and sleeping GIF on the right
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Wallet not connected", color = TextSecondary, fontSize = 18.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Connect your Phantom wallet to continue.", color = TextTertiary, fontSize = 12.sp)
+                    Spacer(Modifier.height(12.dp))
+                    Button(
+                        onClick = connectWalletCallback,
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue, contentColor = Color.White),
+                        shape = RoundedCornerShape(14.dp)
+                    ) { Text("Connect Wallet") }
+                }
+                Spacer(Modifier.width(16.dp))
+                AsyncImage(
+                    model = "file:///android_asset/sleeping.gif",
+                    contentDescription = "Wallet status animation",
+                    modifier = Modifier
+                        .size(110.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(SurfaceDark.copy(alpha = 0.4f))
+                )
+            }
+        } else {
+            // Connected: normal content, but remove any 'Linked' status label
+            Box(Modifier.fillMaxSize()) {
+                // Subtle dots background
+                Canvas(modifier = Modifier.matchParentSize()) {
+                    val step = 28.dp.toPx(); val radius = 2.dp.toPx(); val color = PrimaryBlue.copy(alpha = 0.05f)
+                    var y = radius
+                    while (y < size.height) {
+                        var x = radius
+                        while (x < size.width) {
+                            drawCircle(color, radius, androidx.compose.ui.geometry.Offset(x, y))
+                            x += step
+                        }
+                        y += step
+                    }
+                }
+                Column(Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)) {
+                    // Header without status text
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("WALLET", color = TextSecondary, fontSize = 12.sp, letterSpacing = 1.sp)
+                    }
+                    Spacer(Modifier.height(16.dp))
+
+                    // Main content row: Left info, Right GIF
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        // LEFT COLUMN
+                        Column(Modifier.weight(1f)) {
+                            if (isLinked) {
+                                // Balance
+                                Text("Balance", color = TextSecondary, fontSize = 12.sp, letterSpacing = 0.5.sp)
+                                Spacer(Modifier.height(6.dp))
+                                val bal = walletState.balance
+                                if (bal != null) {
+                                    Text(String.format(java.util.Locale.US, "%.4f SOL", bal), color = TextPrimary, fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
+                                } else {
+                                    Text("— SOL", color = TextSecondary, fontSize = 22.sp, fontWeight = FontWeight.Medium)
+                                }
+                                Spacer(Modifier.height(14.dp))
+                                // Copy chip (enabled only when connected+linked)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Row(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(30))
+                                            .clickable {
+                                                clipboard?.setPrimaryClip(ClipData.newPlainText("Wallet address", linkedAddress))
+                                                copied = true
+                                            }
+                                            .background(PrimaryBlue.copy(alpha = 0.15f))
+                                            .padding(horizontal = 18.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(Icons.Default.ContentCopy, contentDescription = if (copied) "Copied" else "Copy wallet address", tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(if (copied) "Copied" else "Copy", color = PrimaryBlue, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                    }
+                                }
+                            } else {
+                                // Connected but not linked: suggest linking; no copy available
+                                Text("Wallet connected", color = TextSecondary, fontSize = 14.sp)
+                                Spacer(Modifier.height(6.dp))
+                                Text("Link your wallet to your Beezle profile.", color = TextTertiary, fontSize = 12.sp)
+                                Spacer(Modifier.height(12.dp))
+                                if (connectedButUnlinkedAddress != null) {
+                                    Button(
+                                        onClick = linkWalletCallback,
+                                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue, contentColor = Color.White),
+                                        shape = RoundedCornerShape(14.dp)
+                                    ) { Text("Link Wallet") }
+                                }
+                            }
+                        }
+                        Spacer(Modifier.width(16.dp))
+                        // RIGHT GIF: phantom when linked, sleeping when not linked
+                        AsyncImage(
+                            model = if (isLinked) "file:///android_asset/phantom.gif" else "file:///android_asset/sleeping.gif",
+                            contentDescription = "Wallet status animation",
+                            modifier = Modifier
+                                .size(110.dp)
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(SurfaceDark.copy(alpha = 0.4f))
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Preview
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ProfileScreenPreview() {
     BeezleTheme {
         ProfileScreen(
             uiState = ProfileViewState(),
             dataState = ProfileDataState(),
+            firebaseUser = null,
             walletState = WalletState(),
             signInCallback = { },
             signOutCallback = {},
+            connectWalletCallback = {},
             linkWalletCallback = {},
             isEditingUsername = false,
             usernameInput = "",
@@ -316,7 +589,6 @@ private fun ProfileScreenPreview() {
 }
 
 @Preview
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ProfileScreenPreview_SignedIn() {
     BeezleTheme {
@@ -332,9 +604,11 @@ private fun ProfileScreenPreview_SignedIn() {
                     username = "Test User"
                 )
             ),
+            firebaseUser = null,
             walletState = WalletState(),
             signInCallback = { },
             signOutCallback = {},
+            connectWalletCallback = {},
             linkWalletCallback = {},
             isEditingUsername = false,
             usernameInput = "",

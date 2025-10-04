@@ -1,5 +1,6 @@
 package com.github.zzorgg.beezle.ui.screens.profile
 
+import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -110,10 +111,10 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun signin() {
+    fun signin(activity: Activity) {
         viewModelScope.launch {
             _profileViewState.update { it.copy(firebaseAuthStatus = AuthStatus.Loading) }
-            val user = authRepository.signin()
+            val user = authRepository.signin(activity)
             if (user == null) {
                 _profileViewState.update { it.copy(firebaseAuthStatus = AuthStatus.Error("Unable to sign-in")) }
                 return@launch

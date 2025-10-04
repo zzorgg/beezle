@@ -1,8 +1,8 @@
 package com.github.zzorgg.beezle.data.repository
 
 import android.util.Log
-import com.github.zzorgg.beezle.BuildConfig
 import com.github.zzorgg.beezle.data.model.duel.ConnectionStatus
+import com.github.zzorgg.beezle.data.model.duel.DuelMode
 import com.github.zzorgg.beezle.data.model.duel.DuelRoom
 import com.github.zzorgg.beezle.data.model.duel.DuelState
 import com.github.zzorgg.beezle.data.model.duel.DuelStatus
@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.random.Random
 
 @Singleton
 class DuelRepository @Inject constructor(
@@ -32,20 +33,36 @@ class DuelRepository @Inject constructor(
     val duelState: StateFlow<DuelState> = _duelState.asStateFlow()
 
     private var currentUser: DuelUser? = null
-    private var questionStartTime: Long = 0
-    private var questionTimerJob: Job? = null
-    private var lastQueueJoinTime: Long? = null
-    private var lastRequeueAttempt: Long = 0
+    private var currentMatchId: String? = null
+    private var currentRound: Int = 0
+    private val totalRounds = 5
 
-    private val QUEUE_STUCK_TIMEOUT_MS = 30_000L // 30s before auto requeue attempt
-    private val REQUEUE_COOLDOWN_MS = 15_000L
-    private val LOCAL_FALLBACK_THRESHOLD_MS = 10_000L // 10s waiting at position 1 -> start local bot duel (debug only)
+    // Question bank for client-side question generation
+    private val mathQuestions = listOf(
+        Triple("15 + 27 = ?", listOf("40", "41", "42", "43"), 2),
+        Triple("8 × 9 = ?", listOf("64", "72", "81", "56"), 1),
+        Triple("100 - 37 = ?", listOf("63", "73", "67", "53"), 0),
+        Triple("144 ÷ 12 = ?", listOf("11", "12", "13", "14"), 1),
+        Triple("5² = ?", listOf("10", "15", "20", "25"), 3),
+        Triple("√64 = ?", listOf("6", "7", "8", "9"), 2),
+        Triple("25 × 4 = ?", listOf("90", "95", "100", "105"), 2),
+        Triple("3³ = ?", listOf("9", "18", "27", "36"), 2),
+    )
 
-    private var localBotActive = false
+    private val csQuestions = listOf(
+        Triple("Time complexity of binary search?", listOf("O(n)", "O(log n)", "O(n²)", "O(1)"), 1),
+        Triple("FIFO data structure?", listOf("Stack", "Queue", "Tree", "Graph"), 1),
+        Triple("Which is not OOP principle?", listOf("Encapsulation", "Polymorphism", "Recursion", "Inheritance"), 2),
+        Triple("REST API uses which protocol?", listOf("FTP", "SMTP", "HTTP", "SSH"), 2),
+        Triple("SQL stands for?", listOf("Standard Query Language", "Structured Query Language", "Sequential Query Language", "System Query Language"), 1),
+        Triple("Git command to save changes?", listOf("git save", "git push", "git commit", "git update"), 2),
+        Triple("Which stores key-value pairs?", listOf("Array", "HashMap", "LinkedList", "Tree"), 1),
+        Triple("TCP connection uses how many handshakes?", listOf("1", "2", "3", "4"), 2),
+    )
 
     companion object {
         private const val TAG = "DuelRepository"
-        private const val DEFAULT_QUESTION_TIME_LIMIT = 15
+        private const val QUESTION_TIME_LIMIT = 15
     }
 
     init {
@@ -60,6 +77,15 @@ class DuelRepository @Inject constructor(
                     isConnected = isConnected,
                     connectionStatus = if (isConnected) ConnectionStatus.CONNECTED else ConnectionStatus.DISCONNECTED
                 )
+
+                if (!isConnected) {
+                    // Handle disconnection during match
+                    if (_duelState.value.currentRoom != null) {
+                        _duelState.value = _duelState.value.copy(
+                            error = "Connection lost. Attempting to reconnect..."
+                        )
+                    }
+                }
             }
         }
     }
@@ -67,38 +93,8 @@ class DuelRepository @Inject constructor(
     private fun observeWebSocketMessages() {
         scope.launch {
             webSocketService.messages.collect { message ->
-                Log.d(TAG, "Received message: $message")
+                Log.d(TAG, "Processing message: ${message::class.simpleName}")
                 handleWebSocketMessage(message)
-            }
-        }
-        // Queue watchdog
-        scope.launch {
-            while (true) {
-                delay(5000)
-                val state = _duelState.value
-                if (state.isInQueue && state.currentRoom == null) {
-                    val since = state.queueSince
-                    if (since != null) {
-                        val elapsed = System.currentTimeMillis() - since
-                        if (elapsed > QUEUE_STUCK_TIMEOUT_MS && (System.currentTimeMillis() - lastRequeueAttempt) > REQUEUE_COOLDOWN_MS) {
-                            lastRequeueAttempt = System.currentTimeMillis()
-                            currentUser?.let { user ->
-                                Log.w(TAG, "Queue seems stuck (elapsed=${elapsed}ms, position=${state.queuePosition}). Re-sending join_queue.")
-                                // Resend join_queue (idempotent on server or will refresh position)
-                                val joinQueueData = WebSocketMessage.JoinQueueData(
-                                    player_id = user.id,
-                                    display_name = user.username
-                                )
-                                webSocketService.sendMessage(WebSocketMessage.JoinQueue(data = joinQueueData))
-                            }
-                        }
-                        // Local fallback (debug builds only) to allow UI testing
-                        if (BuildConfig.DEBUG && !localBotActive && state.queuePosition == 1 && elapsed > LOCAL_FALLBACK_THRESHOLD_MS) {
-                            Log.w(TAG, "Starting local bot duel fallback for UI testing (elapsed=${elapsed}ms)")
-                            startLocalBotMatch()
-                        }
-                    }
-                }
             }
         }
     }
@@ -106,6 +102,7 @@ class DuelRepository @Inject constructor(
     private fun handleWebSocketMessage(message: WebSocketMessage) {
         when (message) {
             is WebSocketMessage.Queued -> {
+                Log.d(TAG, "✅ Queued at position: ${message.data.position}")
                 _duelState.value = _duelState.value.copy(
                     isInQueue = true,
                     isSearching = true,
@@ -116,23 +113,28 @@ class DuelRepository @Inject constructor(
             }
 
             is WebSocketMessage.MatchFound -> {
-                // Create a DuelRoom from the match data
+                Log.d(TAG, "🎮 Match found! ID: ${message.data.match_id}")
+                currentMatchId = message.data.match_id
+                currentRound = 0
+
                 val player1 = DuelUser(
                     id = message.data.player_id,
-                    username = currentUser?.username ?: "Player",
+                    username = currentUser?.username ?: "You",
                     avatarUrl = currentUser?.avatarUrl
                 )
                 val player2 = DuelUser(
                     id = message.data.opponent_id,
                     username = message.data.opponent_name,
-                    avatarUrl = null // TODO Fetch opponent avatar
+                    avatarUrl = message.data.opponent_id
                 )
 
                 val room = DuelRoom(
                     id = message.data.match_id,
                     player1 = player1,
                     player2 = player2,
-                    status = DuelStatus.IN_PROGRESS
+                    status = DuelStatus.IN_PROGRESS,
+                    betAmount = message.data.bet_amount,
+                    betToken = message.data.bet_token
                 )
 
                 _duelState.value = _duelState.value.copy(
@@ -141,62 +143,53 @@ class DuelRepository @Inject constructor(
                     currentRoom = room,
                     error = null,
                     queuePosition = null,
-                    queueSince = null
+                    queueSince = null,
+                    myScore = 0,
+                    opponentScore = 0,
+                    currentRound = 0
                 )
 
-                // Inform server this client is ready (if protocol expects it)
-                try {
-                    val readyData = WebSocketMessage.Ready.ReadyData(
-                        match_id = message.data.match_id,
-                        player_id = message.data.player_id
-                    )
-                    webSocketService.sendMessage(WebSocketMessage.Ready(data = readyData))
-                    Log.d(TAG, "Sent ready acknowledgment for match ${message.data.match_id}")
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to send ready message", e)
+                // Start the first round
+                scope.launch {
+                    delay(1500) // Brief delay to show "Match Found" screen
+                    startNextRound()
                 }
             }
 
-            is WebSocketMessage.QuestionReceived -> {
-                questionStartTime = System.currentTimeMillis()
-
-                val question = Question(
-                    id = message.data.question_id,
-                    text = message.data.question_text,
-                    options = message.data.options,
-                    correctAnswer = 0, // Placeholder; not known yet
-                    timeLimit = message.data.time_limit
-                )
+            is WebSocketMessage.ScoreUpdate -> {
+                Log.d(TAG, "📊 Score update: ${message.data.scores}")
+                val myId = currentUser?.id ?: return
+                val myScore = message.data.scores[myId] ?: 0
+                val opponentScore = message.data.scores.filterKeys { it != myId }.values.firstOrNull() ?: 0
 
                 _duelState.value = _duelState.value.copy(
-                    currentQuestion = question,
-                    timeRemaining = message.data.time_limit,
-                    selectedAnswer = null,
-                    hasAnswered = false,
-                    error = null
+                    myScore = myScore,
+                    opponentScore = opponentScore,
+                    currentRound = message.data.round_number
                 )
-                startQuestionTimer(message.data.time_limit)
+
+                // Show round result briefly, then move to next round
+                scope.launch {
+                    delay(2000)
+                    if (message.data.round_number < totalRounds) {
+                        startNextRound()
+                    }
+                }
             }
 
-            is WebSocketMessage.RoundResult -> {
-                cancelQuestionTimer()
+            is WebSocketMessage.OpponentAnswer -> {
+                Log.d(TAG, "👤 Opponent answered: ${if (message.data.correct) "correct" else "incorrect"}")
                 _duelState.value = _duelState.value.copy(
-                    lastRoundResult = message,
-                    hasAnswered = false,
-                    selectedAnswer = null,
-                    currentQuestion = null,
-                    timeRemaining = 0
+                    opponentAnswered = true
                 )
             }
 
-            is WebSocketMessage.DuelComplete -> {
-                cancelQuestionTimer()
+            is WebSocketMessage.GameOver -> {
+                Log.d(TAG, "🏁 Game over! Winner: ${message.data.winner_id}")
                 _duelState.value = _duelState.value.copy(
+                    lastGameResult = message,
                     currentRoom = null,
                     currentQuestion = null,
-                    timeRemaining = 0,
-                    selectedAnswer = null,
-                    hasAnswered = false,
                     isInQueue = false,
                     isSearching = false,
                     queuePosition = null,
@@ -205,19 +198,18 @@ class DuelRepository @Inject constructor(
             }
 
             is WebSocketMessage.OpponentLeft -> {
-                cancelQuestionTimer()
+                Log.d(TAG, "🚪 Opponent left the match")
                 _duelState.value = _duelState.value.copy(
-                    error = "Opponent left the duel: ${message.data.reason}",
+                    error = "Opponent disconnected. You win by forfeit!",
                     currentRoom = null,
                     currentQuestion = null,
                     isInQueue = false,
-                    isSearching = false,
-                    queuePosition = null,
-                    queueSince = null
+                    isSearching = false
                 )
             }
 
             is WebSocketMessage.Error -> {
+                Log.e(TAG, "❌ Server error: ${message.data.message}")
                 _duelState.value = _duelState.value.copy(
                     error = message.data.message,
                     isInQueue = false,
@@ -231,25 +223,60 @@ class DuelRepository @Inject constructor(
         }
     }
 
-    private fun startQuestionTimer(limit: Int?) {
-        cancelQuestionTimer()
-        val timeLimit = limit ?: _duelState.value.currentQuestion?.timeLimit ?: DEFAULT_QUESTION_TIME_LIMIT
+    private fun startNextRound() {
+        currentRound++
+
+        if (currentRound > totalRounds) {
+            Log.d(TAG, "All rounds completed")
+            return
+        }
+
+        val question = generateQuestion()
+        _duelState.value = _duelState.value.copy(
+            currentQuestion = question,
+            timeRemaining = QUESTION_TIME_LIMIT,
+            selectedAnswer = null,
+            hasAnswered = false,
+            opponentAnswered = false,
+            currentRound = currentRound
+        )
+
+        startQuestionTimer()
+    }
+
+    private fun generateQuestion(): Question {
+        val mode = _duelState.value.selectedMode ?: DuelMode.MATH
+        val (text, options, correctIndex) = when (mode) {
+            DuelMode.MATH -> mathQuestions.random()
+            DuelMode.CS -> csQuestions.random()
+            DuelMode.GENERAL -> if (Random.nextBoolean()) mathQuestions.random() else csQuestions.random()
+        }
+
+        return Question(
+            id = "q_${currentMatchId}_$currentRound",
+            text = text,
+            options = options,
+            correctAnswer = correctIndex,
+            timeLimit = QUESTION_TIME_LIMIT,
+            roundNumber = currentRound
+        )
+    }
+
+    private var questionTimerJob: Job? = null
+
+    private fun startQuestionTimer() {
+        questionTimerJob?.cancel()
         questionTimerJob = scope.launch {
-            for (remaining in (timeLimit - 1) downTo 0) {
-                delay(1000)
+            for (remaining in QUESTION_TIME_LIMIT downTo 0) {
                 _duelState.value = _duelState.value.copy(timeRemaining = remaining)
-                if (remaining <= 0) {
-                    if (!_duelState.value.hasAnswered) {
-                        submitAnswer(-1) // timeout
-                    }
+                delay(1000)
+
+                if (remaining == 0 && !_duelState.value.hasAnswered) {
+                    // Auto-submit timeout (incorrect answer)
+                    submitAnswer(-1)
                 }
             }
         }
-    }
-
-    private fun cancelQuestionTimer() {
-        questionTimerJob?.cancel()
-        questionTimerJob = null
     }
 
     fun connectToServer() {
@@ -261,12 +288,45 @@ class DuelRepository @Inject constructor(
     }
 
     fun disconnect() {
+        questionTimerJob?.cancel()
         webSocketService.disconnect()
         _duelState.value = DuelState()
-        lastQueueJoinTime = null
+        currentMatchId = null
+        currentRound = 0
     }
 
-    fun joinQueue(user: DuelUser) {
+    fun startDuel(username: String, mode: DuelMode) {
+        val user = DuelUser(
+            id = generateUserId(),
+            username = username,
+            avatarUrl = null
+        )
+
+        currentUser = user
+
+        _duelState.value = _duelState.value.copy(
+            selectedMode = mode
+        )
+
+        if (!_duelState.value.isConnected) {
+            connectToServer()
+            scope.launch {
+                // Wait for connection
+                delay(2000)
+                if (_duelState.value.isConnected) {
+                    joinQueue(user)
+                } else {
+                    _duelState.value = _duelState.value.copy(
+                        error = "Failed to connect to server"
+                    )
+                }
+            }
+        } else {
+            joinQueue(user)
+        }
+    }
+
+    private fun joinQueue(user: DuelUser) {
         if (!_duelState.value.isConnected) {
             _duelState.value = _duelState.value.copy(
                 error = "Not connected to server"
@@ -274,9 +334,7 @@ class DuelRepository @Inject constructor(
             return
         }
 
-        currentUser = user
         val now = System.currentTimeMillis()
-        lastQueueJoinTime = now
         _duelState.value = _duelState.value.copy(
             isInQueue = true,
             isSearching = true,
@@ -285,12 +343,15 @@ class DuelRepository @Inject constructor(
             queueSince = now
         )
 
-        // Send the correct message format that matches the server expectations
         val joinQueueData = WebSocketMessage.JoinQueueData(
             player_id = user.id,
-            display_name = user.username
+            display_name = user.username,
+            bet_amount = 0.0,
+            bet_token = "SOL"
         )
+
         webSocketService.sendMessage(WebSocketMessage.JoinQueue(data = joinQueueData))
+        Log.d(TAG, "📤 Sent join_queue for player: ${user.username}")
     }
 
     fun leaveQueue() {
@@ -300,148 +361,55 @@ class DuelRepository @Inject constructor(
             queuePosition = null,
             queueSince = null
         )
-        // TODO: Optionally send a leave_queue action if server supports it
     }
 
     fun submitAnswer(answerIndex: Int) {
-        val question = _duelState.value.currentQuestion
-        val user = currentUser
+        val question = _duelState.value.currentQuestion ?: return
+        val user = currentUser ?: return
+        val matchId = currentMatchId ?: return
 
-        if (question == null || user == null || _duelState.value.hasAnswered) {
+        if (_duelState.value.hasAnswered) {
+            Log.w(TAG, "Already answered this question")
             return
         }
+
+        val correct = answerIndex == question.correctAnswer
+        val scoreDelta = if (correct) 1 else 0
+        val isFinal = currentRound >= totalRounds
 
         _duelState.value = _duelState.value.copy(
             selectedAnswer = answerIndex,
             hasAnswered = true
         )
 
-        // Send answer in the correct format
-        val answerData = WebSocketMessage.AnswerData(
+        questionTimerJob?.cancel()
+
+        val answerData = WebSocketMessage.SubmitAnswerData(
+            match_id = matchId,
             player_id = user.id,
             question_id = question.id,
-            answer_index = answerIndex
+            answer = if (answerIndex >= 0) question.options[answerIndex] else "TIMEOUT",
+            correct = correct,
+            score_delta = scoreDelta,
+            final = isFinal,
+            round_number = currentRound
         )
-        webSocketService.sendMessage(WebSocketMessage.AnswerSubmitted(data = answerData))
+
+        webSocketService.sendMessage(WebSocketMessage.SubmitAnswer(data = answerData))
+        Log.d(TAG, "📤 Submitted answer: $answerIndex (${if (correct) "correct" else "incorrect"})")
     }
 
     fun clearError() {
         _duelState.value = _duelState.value.copy(error = null)
     }
 
-    fun clearLastRoundResult() {
-        _duelState.value = _duelState.value.copy(lastRoundResult = null)
+    fun clearGameResult() {
+        _duelState.value = _duelState.value.copy(lastGameResult = null)
+    }
+
+    private fun generateUserId(): String {
+        return "player_${System.currentTimeMillis()}_${Random.nextInt(1000, 9999)}"
     }
 
     fun getCurrentUser() = currentUser
-
-    fun setCurrentUser(user: DuelUser) {
-        currentUser = user
-    }
-
-    private fun startLocalBotMatch() {
-        val user = currentUser ?: return
-        localBotActive = true
-        val bot = DuelUser(id = "bot_${System.currentTimeMillis()}", username = "Bot", avatarUrl = null)
-        val room = DuelRoom(
-            id = "local_${System.currentTimeMillis()}",
-            player1 = DuelUser(id = user.id, username = user.username, avatarUrl = user.avatarUrl),
-            player2 = bot,
-            status = DuelStatus.IN_PROGRESS
-        )
-        _duelState.value = _duelState.value.copy(
-            currentRoom = room,
-            isInQueue = false,
-            isSearching = false,
-            queuePosition = null,
-            queueSince = null
-        )
-        scope.launch { runLocalBotRounds(botId = bot.id, rounds = 3) }
-    }
-
-    private suspend fun runLocalBotRounds(botId: String, rounds: Int) {
-        repeat(rounds) { roundIndex ->
-            if (!_duelState.value.isConnected && !BuildConfig.DEBUG) return
-            val question = generateLocalQuestion(roundIndex)
-            // Show question
-            _duelState.value = _duelState.value.copy(
-                currentQuestion = question,
-                timeRemaining = question.timeLimit,
-                selectedAnswer = null,
-                hasAnswered = false
-            )
-            questionStartTime = System.currentTimeMillis()
-            startQuestionTimer(question.timeLimit)
-            // Wait for either answer or timeout
-            val roundDuration = question.timeLimit * 1000L
-            val start = System.currentTimeMillis()
-            while (System.currentTimeMillis() - start < roundDuration && _duelState.value.hasAnswered.not()) {
-                delay(250)
-            }
-            cancelQuestionTimer()
-            val playerAnswer = _duelState.value.selectedAnswer
-            val playerCorrect = playerAnswer != null && playerAnswer == question.correctAnswer
-            val botCorrect = (0..100).random() < 55 // 55% correctness for bot
-            val roundResult = WebSocketMessage.RoundResult(
-                action = "round_result",
-                data = WebSocketMessage.RoundResultData(
-                    player1_correct = playerCorrect,
-                    player2_correct = botCorrect,
-                    correct_answer = question.correctAnswer
-                )
-            )
-            _duelState.value = _duelState.value.copy(
-                lastRoundResult = roundResult,
-                currentQuestion = null,
-                selectedAnswer = null,
-                hasAnswered = false,
-                timeRemaining = 0
-            )
-            delay(3000) // brief result display
-            _duelState.value = _duelState.value.copy(lastRoundResult = null)
-        }
-        // Complete duel
-        val playerWins = _duelState.value.lastRoundResult?.data?.player1_correct == true
-        val duelComplete = WebSocketMessage.DuelComplete(
-            action = "duel_complete",
-            data = WebSocketMessage.DuelCompleteData(
-                winner_id = if (playerWins) currentUser?.id else botId
-            )
-        )
-        _duelState.value = _duelState.value.copy(
-            currentRoom = null,
-            currentQuestion = null,
-            isInQueue = false,
-            isSearching = false,
-            queuePosition = null,
-            queueSince = null,
-            lastRoundResult = null
-        )
-        localBotActive = false
-        Log.i(TAG, "Local bot duel finished")
-    }
-
-    private fun generateLocalQuestion(index: Int): Question {
-        val samples = listOf(
-            Triple("What is 2 + 2?", listOf("1", "2", "3", "4"), 3),
-            Triple("Capital of France?", listOf("Berlin", "Paris", "Madrid", "Rome"), 1),
-            Triple("Kotlin is a...", listOf("Database", "Language", "OS", "Library"), 1),
-            Triple("HTTP status 404 means?", listOf("Unauthorized", "Not Found", "Forbidden", "OK"), 1)
-        )
-        val (text, options, correct) = samples[index % samples.size]
-        return Question(
-            id = "local_q_$index",
-            text = text,
-            options = options,
-            correctAnswer = correct,
-            timeLimit = 15
-        )
-    }
-
-    fun startLocalTestDuel() {
-        if (BuildConfig.DEBUG && !localBotActive) {
-            Log.i(TAG, "Manually starting local test duel (debug mode)")
-            startLocalBotMatch()
-        }
-    }
 }

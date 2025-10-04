@@ -158,7 +158,7 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
 //                            )
                         ) {
                             Text(
-                                text = "Connect Wallet",
+                                text = "Get Started",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold
                             )

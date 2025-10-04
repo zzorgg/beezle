@@ -1,67 +1,71 @@
 package com.github.zzorgg.beezle.ui.screens.duel
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.github.zzorgg.beezle.ui.screens.duel.components.ConnectionStatusIndicator
-import com.github.zzorgg.beezle.ui.screens.duel.components.GameplayScreen
-import com.github.zzorgg.beezle.ui.screens.duel.components.SearchingScreen
-import com.github.zzorgg.beezle.ui.screens.duel.components.StartDuelScreen
-import com.github.zzorgg.beezle.ui.screens.duel.components.WaitingForQuestionScreen
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.airbnb.lottie.compose.*
+import com.github.zzorgg.beezle.data.model.duel.ConnectionStatus
+import com.github.zzorgg.beezle.data.model.duel.DuelMode
+import com.github.zzorgg.beezle.data.model.duel.DuelState
+import com.github.zzorgg.beezle.ui.theme.*
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DuelScreen(
     onNavigateBack: () -> Unit,
-    viewModel: DuelViewModel = hiltViewModel(),
+    initialMode: DuelMode? = null,
+    viewModel: DuelViewModel = hiltViewModel()
 ) {
     val duelState by viewModel.duelState.collectAsState()
-    var username by remember { mutableStateOf("") }
+    var selectedMode by remember { mutableStateOf(initialMode ?: DuelMode.MATH) }
 
     LaunchedEffect(Unit) {
         viewModel.connectToServer()
     }
 
-    // Handle errors
+    // Auto-dismiss errors after 5 seconds
     duelState.error?.let { error ->
         LaunchedEffect(error) {
-            delay(3000)
+            delay(5000)
             viewModel.clearError()
         }
     }
 
-    Scaffold { innerPadding ->
+    // Handle game over result
+    duelState.lastGameResult?.let { result ->
+        GameOverDialog(
+            result = result,
+            myId = viewModel.duelState.value.currentRoom?.player1?.id ?: "",
+            onDismiss = {
+                viewModel.clearGameResult()
+                onNavigateBack()
+            }
+        )
+    }
+
+    Scaffold(
+        containerColor = BackgroundDark
+    ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -71,15 +75,20 @@ fun DuelScreen(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Top Bar (removed title per request)
+                // Top Bar
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = {
+                        if (duelState.isSearching) {
+                            viewModel.leaveQueue()
+                        }
+                        onNavigateBack()
+                    }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
@@ -93,17 +102,16 @@ fun DuelScreen(
                 // Main Content
                 when {
                     duelState.currentRoom != null && duelState.currentQuestion != null -> {
-                        // In-game UI
+                        // Gameplay Screen
                         GameplayScreen(
                             duelState = duelState,
-                            onAnswerSelected = viewModel::submitAnswer,
-                            onClearRoundResult = viewModel::clearLastRoundResult
+                            onAnswerSelected = viewModel::submitAnswer
                         )
                     }
 
                     duelState.currentRoom != null -> {
-                        // Waiting for question
-                        WaitingForQuestionScreen(duelState)
+                        // Match found - waiting for first question
+                        MatchFoundScreen(duelState = duelState)
                     }
 
                     duelState.isSearching -> {
@@ -116,11 +124,14 @@ fun DuelScreen(
                     }
 
                     else -> {
-                        // Start screen
-                        StartDuelScreen(
-                            onStartDuel = {
-                                viewModel.startDuel()
-                            }
+                        // Mode selection and start
+                        ModeSelectionScreen(
+                            selectedMode = selectedMode,
+                            onModeSelected = { selectedMode = it },
+                            onStartDuel = { username ->
+                                viewModel.startDuel(username, selectedMode)
+                            },
+                            isConnected = duelState.isConnected
                         )
                     }
                 }
@@ -134,47 +145,183 @@ fun DuelScreen(
                         .padding(16.dp)
                         .fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = Color.Red.copy(alpha = 0.9f)
+                        containerColor = Color(0xFFE53935)
                     )
                 ) {
-                    Text(
-                        text = error,
+                    Row(
                         modifier = Modifier.padding(16.dp),
-                        color = Color.White,
-                        textAlign = TextAlign.Center
-                    )
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = error,
+                            color = Color.White,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun ConnectionStatusIndicator(status: ConnectionStatus) {
+    val color = when (status) {
+        ConnectionStatus.CONNECTED -> AccentGreen
+        ConnectionStatus.CONNECTING, ConnectionStatus.RECONNECTING -> Color(0xFFFFA726)
+        ConnectionStatus.DISCONNECTED, ConnectionStatus.ERROR -> AccentRed
+    }
+
+    val scale by animateFloatAsState(
+        targetValue = if (status == ConnectionStatus.CONNECTING || status == ConnectionStatus.RECONNECTING) 1.2f else 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000),
+            repeatMode = RepeatMode.Reverse
+        ), label = "statusPulse"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(12.dp)
+            .scale(scale)
+            .clip(CircleShape)
+            .background(color)
+    )
+}
+
+@Composable
+private fun ModeSelectionScreen(
+    selectedMode: DuelMode,
+    onModeSelected: (DuelMode) -> Unit,
+    onStartDuel: (String) -> Unit,
+    isConnected: Boolean
+) {
+    var showUsernameDialog by remember { mutableStateOf(false) }
+    var username by remember { mutableStateOf("") }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+    ) {
+        // Battle Animation
+        val composition by rememberLottieComposition(LottieCompositionSpec.Asset("Rrc3wq5CfZ.json"))
+        val progress by animateLottieCompositionAsState(
+            composition,
+            iterations = LottieConstants.IterateForever
+        )
+
+        LottieAnimation(
+            composition = composition,
+            progress = { progress },
+            modifier = Modifier.size(180.dp)
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "Choose Your Challenge",
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Select a category and compete in real-time!",
+            style = MaterialTheme.typography.bodyLarge.copy(
+                color = Color.White.copy(alpha = 0.7f)
+            ),
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Mode Selection Cards
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            ModeCard(
+                mode = DuelMode.MATH,
+                isSelected = selectedMode == DuelMode.MATH,
+                onClick = { onModeSelected(DuelMode.MATH) },
+                modifier = Modifier.weight(1f)
+            )
+            ModeCard(
+                mode = DuelMode.CS,
+                isSelected = selectedMode == DuelMode.CS,
+                onClick = { onModeSelected(DuelMode.CS) },
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        // Start Duel Button
+        Button(
+            onClick = { showUsernameDialog = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (selectedMode == DuelMode.MATH) PrimaryBlue else AccentGreen
+            ),
+            enabled = isConnected
+        ) {
+            Icon(
+                Icons.Default.SportsMartialArts,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = if (isConnected) "START DUEL" else "CONNECTING...",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
 
     // Username Dialog
-    if (false) {
+    if (showUsernameDialog) {
         AlertDialog(
-            onDismissRequest = { /*showUsernameDialog = false*/ },
-            title = { Text("Enter Username") },
+            onDismissRequest = { showUsernameDialog = false },
+            title = { Text("Enter Your Name") },
             text = {
                 OutlinedTextField(
                     value = username,
                     onValueChange = { username = it },
                     label = { Text("Username") },
-                    singleLine = true
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
             },
             confirmButton = {
                 TextButton(
                     onClick = {
                         if (username.isNotBlank()) {
-//                            showUsernameDialog = false
-//                            viewModel.startDuel(username)
+                            showUsernameDialog = false
+                            onStartDuel(username.trim())
                         }
-                    }
+                    },
+                    enabled = username.isNotBlank()
                 ) {
-                    Text("START DUEL")
+                    Text("START")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { /*showUsernameDialog = false*/ }) {
+                TextButton(onClick = { showUsernameDialog = false }) {
                     Text("Cancel")
                 }
             }
@@ -182,3 +329,511 @@ fun DuelScreen(
     }
 }
 
+@Composable
+private fun ModeCard(
+    mode: DuelMode,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val color = when (mode) {
+        DuelMode.MATH -> PrimaryBlue
+        DuelMode.CS -> AccentGreen
+        DuelMode.GENERAL -> AccentPurple
+    }
+
+    val icon = when (mode) {
+        DuelMode.MATH -> Icons.Default.Calculate
+        DuelMode.CS -> Icons.Default.Code
+        DuelMode.GENERAL -> Icons.Default.EmojiObjects
+    }
+
+    val label = when (mode) {
+        DuelMode.MATH -> "Math Duel"
+        DuelMode.CS -> "CS Duel"
+        DuelMode.GENERAL -> "Mixed"
+    }
+
+    Card(
+        modifier = modifier
+            .aspectRatio(1f)
+            .clickable { onClick() }
+            .then(
+                if (isSelected) Modifier.border(3.dp, color, RoundedCornerShape(16.dp))
+                else Modifier
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) color.copy(alpha = 0.2f) else SurfaceDark
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = label,
+                color = if (isSelected) color else TextPrimary,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun SearchingScreen(
+    onCancel: () -> Unit,
+    queuePosition: Int?,
+    queueSince: Long?
+) {
+    val elapsedSeconds by produceState(initialValue = 0L, key1 = queueSince) {
+        while (true) {
+            queueSince?.let { value = (System.currentTimeMillis() - it) / 1000 }
+            delay(1000)
+        }
+    }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+    ) {
+        // Searching animation
+        val composition by rememberLottieComposition(LottieCompositionSpec.Asset("0cvjnffoJq.json"))
+        val progress by animateLottieCompositionAsState(
+            composition,
+            iterations = LottieConstants.IterateForever
+        )
+
+        LottieAnimation(
+            composition = composition,
+            progress = { progress },
+            modifier = Modifier.size(200.dp)
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "Finding Opponent...",
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (queuePosition != null) {
+            Text(
+                text = "Position in queue: #$queuePosition",
+                color = PrimaryBlue,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+
+        if (elapsedSeconds > 0) {
+            Text(
+                text = "Waiting: ${elapsedSeconds}s",
+                color = TextSecondary,
+                fontSize = 14.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        OutlinedButton(
+            onClick = onCancel,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+        ) {
+            Text("Cancel Search")
+        }
+    }
+}
+
+@Composable
+private fun MatchFoundScreen(duelState: DuelState) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+    ) {
+        Text(
+            text = "Match Found!",
+            style = MaterialTheme.typography.headlineLarge.copy(
+                fontWeight = FontWeight.Bold,
+                color = AccentGreen
+            )
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        duelState.currentRoom?.let { room ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                PlayerBadge(
+                    name = room.player1.username,
+                    score = duelState.myScore,
+                    isYou = true
+                )
+
+                Text(
+                    text = "VS",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = TextSecondary
+                    )
+                )
+
+                PlayerBadge(
+                    name = room.player2?.username ?: "Opponent",
+                    score = duelState.opponentScore,
+                    isYou = false
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        CircularProgressIndicator(color = PrimaryBlue)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Get ready...",
+            color = TextSecondary
+        )
+    }
+}
+
+@Composable
+private fun PlayerBadge(
+    name: String,
+    score: Int,
+    isYou: Boolean
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .clip(CircleShape)
+                .background(if (isYou) PrimaryBlue.copy(alpha = 0.2f) else AccentPurple.copy(alpha = 0.2f))
+                .border(2.dp, if (isYou) PrimaryBlue else AccentPurple, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = name.take(2).uppercase(),
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isYou) PrimaryBlue else AccentPurple
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        Text(
+            text = name,
+            fontWeight = FontWeight.Medium,
+            color = TextPrimary
+        )
+
+        if (isYou) {
+            Text(
+                text = "(You)",
+                fontSize = 12.sp,
+                color = TextSecondary
+            )
+        }
+
+        Text(
+            text = "Score: $score",
+            fontSize = 14.sp,
+            color = TextSecondary
+        )
+    }
+}
+
+@Composable
+private fun GameplayScreen(
+    duelState: DuelState,
+    onAnswerSelected: (Int) -> Unit
+) {
+    val question = duelState.currentQuestion ?: return
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Score Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            ScoreCard(
+                name = "You",
+                score = duelState.myScore,
+                color = PrimaryBlue,
+                hasAnswered = duelState.hasAnswered
+            )
+
+            Text(
+                text = "Round ${duelState.currentRound}/${duelState.totalRounds}",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = TextSecondary
+                )
+            )
+
+            ScoreCard(
+                name = "Opponent",
+                score = duelState.opponentScore,
+                color = AccentPurple,
+                hasAnswered = duelState.opponentAnswered
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Timer
+        TimerCircle(timeRemaining = duelState.timeRemaining)
+
+        Spacer(Modifier.height(24.dp))
+
+        // Question
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = SurfaceDark)
+        ) {
+            Column(Modifier.padding(20.dp)) {
+                Text(
+                    text = question.text,
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    ),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        // Answer Options
+        question.options.forEachIndexed { index, option ->
+            AnswerButton(
+                text = option,
+                index = index,
+                isSelected = duelState.selectedAnswer == index,
+                isCorrect = duelState.hasAnswered && index == question.correctAnswer,
+                isWrong = duelState.hasAnswered && duelState.selectedAnswer == index && index != question.correctAnswer,
+                enabled = !duelState.hasAnswered,
+                onClick = { onAnswerSelected(index) }
+            )
+            Spacer(Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+private fun ScoreCard(
+    name: String,
+    score: Int,
+    color: Color,
+    hasAnswered: Boolean
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = name,
+            fontSize = 12.sp,
+            color = TextSecondary
+        )
+        Text(
+            text = score.toString(),
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
+        if (hasAnswered) {
+            Icon(
+                Icons.Default.Check,
+                contentDescription = "Answered",
+                tint = AccentGreen,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun TimerCircle(timeRemaining: Int) {
+    val progress = timeRemaining / 15f
+    val color = when {
+        timeRemaining > 10 -> AccentGreen
+        timeRemaining > 5 -> Color(0xFFFFA726)
+        else -> AccentRed
+    }
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.size(80.dp)
+    ) {
+        CircularProgressIndicator(
+            progress = progress,
+            modifier = Modifier.fillMaxSize(),
+            color = color,
+            strokeWidth = 6.dp
+        )
+        Text(
+            text = timeRemaining.toString(),
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
+    }
+}
+
+@Composable
+private fun AnswerButton(
+    text: String,
+    index: Int,
+    isSelected: Boolean,
+    isCorrect: Boolean,
+    isWrong: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    val backgroundColor = when {
+        isCorrect -> AccentGreen.copy(alpha = 0.3f)
+        isWrong -> AccentRed.copy(alpha = 0.3f)
+        isSelected -> PrimaryBlue.copy(alpha = 0.3f)
+        else -> SurfaceDark
+    }
+
+    val borderColor = when {
+        isCorrect -> AccentGreen
+        isWrong -> AccentRed
+        isSelected -> PrimaryBlue
+        else -> Color.Transparent
+    }
+
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(60.dp)
+            .then(if (borderColor != Color.Transparent) Modifier.border(2.dp, borderColor, RoundedCornerShape(12.dp)) else Modifier),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = backgroundColor,
+            disabledContainerColor = backgroundColor
+        ),
+        enabled = enabled,
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = text,
+                color = Color.White,
+                fontSize = 16.sp,
+                modifier = Modifier.weight(1f)
+            )
+            if (isCorrect) {
+                Icon(Icons.Default.Check, contentDescription = null, tint = AccentGreen)
+            } else if (isWrong) {
+                Icon(Icons.Default.Close, contentDescription = null, tint = AccentRed)
+            }
+        }
+    }
+}
+
+@Composable
+private fun GameOverDialog(
+    result: com.github.zzorgg.beezle.data.model.duel.WebSocketMessage.GameOver,
+    myId: String,
+    onDismiss: () -> Unit
+) {
+    val isWinner = result.data.winner_id == myId
+    val myScore = result.data.scores[myId] ?: 0
+    val opponentScore = result.data.scores.filterKeys { it != myId }.values.firstOrNull() ?: 0
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = if (isWinner) "🏆 Victory!" else "💪 Good Try!",
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "Final Score",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("You", fontWeight = FontWeight.Bold)
+                        Text(
+                            myScore.toString(),
+                            fontSize = 32.sp,
+                            color = if (isWinner) AccentGreen else AccentRed,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Opponent", fontWeight = FontWeight.Bold)
+                        Text(
+                            opponentScore.toString(),
+                            fontSize = 32.sp,
+                            color = if (!isWinner) AccentGreen else AccentRed,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isWinner) AccentGreen else PrimaryBlue
+                )
+            ) {
+                Text("Done")
+            }
+        }
+    )
+}
