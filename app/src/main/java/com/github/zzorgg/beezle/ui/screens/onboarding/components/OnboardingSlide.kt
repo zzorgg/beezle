@@ -1,17 +1,31 @@
 package com.github.zzorgg.beezle.ui.screens.onboarding.components
 
+import android.content.res.Configuration
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.SportsMartialArts
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.zzorgg.beezle.R
+import com.github.zzorgg.beezle.ui.theme.BeezleTheme
+import com.github.zzorgg.beezle.ui.theme.primaryBlue
 
 @Composable
 fun OnboardingSlide(
@@ -46,11 +60,9 @@ fun OnboardingSlide(
         // Title
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineMedium.copy(
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold
-            ),
-            color = MaterialTheme.colorScheme.onPrimary,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
@@ -60,15 +72,74 @@ fun OnboardingSlide(
         // Description
         Text(
             text = description,
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontSize = 16.sp,
-                lineHeight = 24.sp
-            ),
-            color = MaterialTheme.colorScheme.onSecondary,
+            style = MaterialTheme.typography.bodyLarge,
+            lineHeight = 24.sp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
+        )
+    }
+}
+
+@Suppress("KotlinConstantConditions")
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun OnboardingSlidePreview() {
+    BeezleTheme {
+        val page = 2
+        OnboardingSlide(
+            title = when (page) {
+                0 -> "Welcome to Beezle"
+                1 -> "Compete & Win"
+                else -> "Earn SOL Rewards"
+            },
+            description = when (page) {
+                0 -> "The ultimate Solana-powered duel platform. Compete in real-time challenges and earn SOL instantly."
+                1 -> "Challenge opponents worldwide. Answer questions under time pressure and prove your skills."
+                else -> "Every victory earns you SOL tokens. Fast, secure, and transparent payouts powered by Solana blockchain."
+            },
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .background(
+                            color = primaryBlue,
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    when (page) {
+                        0 -> Image(
+                            painter = painterResource(id = R.drawable.bee),
+                            contentDescription = "Bee icon",
+                            modifier = Modifier.size(80.dp)
+                        )
+
+                        1 -> Icon(
+                            imageVector = Icons.Default.SportsMartialArts,
+                            contentDescription = "Duel icon",
+                            tint = Color.White,
+                            modifier = Modifier.size(72.dp)
+                        )
+
+                        2 -> Icon(
+                            imageVector = Icons.Default.AccountBalanceWallet,
+                            contentDescription = "Rewards wallet icon",
+                            tint = Color.White,
+                            modifier = Modifier.size(66.dp)
+                        )
+
+                        else -> Text(
+                            text = "💰",
+                            fontSize = 64.sp,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
         )
     }
 }

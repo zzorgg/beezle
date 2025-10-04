@@ -117,7 +117,10 @@ fun MainAppScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(start = 8.dp)
                     ) {
-                        ProfileIcon(model = avatarUrl)
+                        ProfileIcon(
+                            model = avatarUrl,
+                            modifier = Modifier.clickable { navigateToCallback("profile") }
+                        )
                         if (aggregatedLevel != null) {
                             Spacer(Modifier.width(8.dp))
                             LevelBadge("Level $aggregatedLevel")
@@ -414,7 +417,7 @@ fun MainAppScreen(
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 "${subjectLabels[selectedSubject]} Duel Mode",
-                                color = if (selectedSubject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.SemiBold,
                                 style = MaterialTheme.typography.titleMedium
                             )
@@ -422,10 +425,7 @@ fun MainAppScreen(
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             "Real-time competitive play",
-//                            color = MaterialTheme.colorScheme.secondary,
-                            color = (if (selectedSubject == Subject.MATH) MaterialTheme.colorScheme.primary.copy(
-                                alpha = 0.85f
-                            ) else MaterialTheme.colorScheme.tertiary).copy(alpha = 0.85f),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -447,16 +447,14 @@ fun MainAppScreen(
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 "${subjectLabels[selectedSubject]} Practice Mode",
-                                color = if (selectedSubject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             "Single-player training & streaks",
-                            color = (if (selectedSubject == Subject.MATH) MaterialTheme.colorScheme.primary.copy(
-                                alpha = 0.85f
-                            ) else MaterialTheme.colorScheme.tertiary).copy(alpha = 0.85f),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }

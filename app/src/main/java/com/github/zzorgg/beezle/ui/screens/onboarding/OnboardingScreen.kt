@@ -1,5 +1,6 @@
 package com.github.zzorgg.beezle.ui.screens.onboarding
 
+import android.content.res.Configuration
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -21,10 +22,13 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.zzorgg.beezle.R
 import com.github.zzorgg.beezle.ui.screens.onboarding.components.OnboardingSlide
+import com.github.zzorgg.beezle.ui.theme.BeezleTheme
+import com.github.zzorgg.beezle.ui.theme.primaryBlue
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -77,14 +81,14 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                                 modifier = Modifier
                                     .size(120.dp)
                                     .background(
-                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        color = primaryBlue,
                                         shape = CircleShape
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 when (page) {
                                     0 -> Image(
-                                        painter = painterResource(id = R.drawable.bee),
+                                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
                                         contentDescription = "Bee icon",
                                         modifier = Modifier.size(80.dp)
                                     )
@@ -166,7 +170,6 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                                 }
                             },
                             modifier = Modifier.width(120.dp),
-//                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
@@ -176,8 +179,7 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Next",
-                                color = Color.White,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
                             )
                         }
                     } else {
@@ -205,5 +207,14 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun OnboardingScreenPreview() {
+    BeezleTheme {
+        OnboardingScreen {  }
     }
 }

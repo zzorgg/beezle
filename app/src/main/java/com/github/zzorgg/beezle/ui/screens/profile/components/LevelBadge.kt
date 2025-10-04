@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 
 @Composable
 fun LevelBadge(text: String) {
@@ -25,7 +26,7 @@ fun LevelBadge(text: String) {
     ) {
         Text(
             text = text,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium
         )
@@ -36,7 +37,7 @@ fun LevelBadge(text: String) {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun LevelBadgePreview() {
-    MaterialTheme {
+    BeezleTheme {
         LevelBadge("Test")
     }
 }

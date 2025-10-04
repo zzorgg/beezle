@@ -1,41 +1,41 @@
 {
   "project_info": {
-    "project_number": "615731667669",
-    "project_id": "beezle-dc29c",
-    "storage_bucket": "beezle-dc29c.firebasestorage.app"
+    "project_number": "491564353441",
+    "project_id": "beezle-f817c",
+    "storage_bucket": "beezle-f817c.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:615731667669:android:2e87f6f2a0af0ecb06785c",
+        "mobilesdk_app_id": "1:491564353441:android:12fbcc07e615513c3a6de0",
         "android_client_info": {
           "package_name": "com.github.zzorgg.beezle"
         }
       },
       "oauth_client": [
         {
-          "client_id": "615731667669-vkjv8o59u3tegnvot8jv09fs5v5t52q1.apps.googleusercontent.com",
+          "client_id": "491564353441-lhqsg43sbs5h3t3t765tspgbdjho29v8.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.github.zzorgg.beezle",
-            "certificate_hash": "50cac8e3cfeb8f9dc637772a69f14dd156c40e56"
+            "certificate_hash": "ad41c566198824f2d9fabad56c4897b443823560"
           }
         },
         {
-          "client_id": "615731667669-q422q2pbepk80e84kk4uf9rqmcteg0qj.apps.googleusercontent.com",
+          "client_id": "491564353441-vc1gi6i525u3d42c9idvu43r5eal15cp.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBwId2u-2QPPvvVnBCh-M9vnQaPu2-qCdg"
+          "current_key": "AIzaSyAS_ppeyVNYZ0RUeztYFLzrqHgtILeLdiI"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "615731667669-q422q2pbepk80e84kk4uf9rqmcteg0qj.apps.googleusercontent.com",
+              "client_id": "491564353441-vc1gi6i525u3d42c9idvu43r5eal15cp.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

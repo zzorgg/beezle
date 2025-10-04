@@ -185,7 +185,7 @@ private fun RoundResultScreenPreview() {
         RoundResultScreen(
             result = WebSocketMessage.RoundResult(
                 data = WebSocketMessage.RoundResultData(
-                    player1_correct = false, player2_correct = false, correct_answer = 2
+                    player1_correct = true, player2_correct = false, correct_answer = 2
                 )
             ),
             duelState = DuelState(
