@@ -16,7 +16,8 @@ class UserProfileRepository @Inject constructor(
 
     suspend fun getCurrentUid(): String? = authRepository.currentUser()?.uid
 
-    suspend fun getProfile(uid: String): UserProfile? {
+    suspend fun getProfile(uid: String?): UserProfile? {
+        if(uid == null) return null
         return try {
             val snap = collection.document(uid).get().await()
             if (snap.exists()) snap.toObject(UserProfile::class.java) else null

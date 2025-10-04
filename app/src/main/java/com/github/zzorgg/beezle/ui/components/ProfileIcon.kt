@@ -1,11 +1,13 @@
 package com.github.zzorgg.beezle.ui.components
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,19 +17,18 @@ import androidx.compose.ui.graphics.DefaultAlpha
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.drawscope.DrawScope.Companion.DefaultFilterQuality
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImagePainter.State
 import coil.compose.AsyncImagePainter.Companion.DefaultTransform
+import coil.compose.AsyncImagePainter.State
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageScope
-import com.github.zzorgg.beezle.R
+
 
 @Composable
-fun MonochromeAsyncImage(
+fun ProfileIcon(
     model: Any?,
-    contentDescription: String?,
     modifier: Modifier = Modifier,
+    contentDescription: String? = "Profile Icon",
     alternateImageModifier: Modifier = Modifier,
     transform: (State) -> State = DefaultTransform,
     loading: @Composable (SubcomposeAsyncImageScope.(State.Loading) -> Unit)? = null,
@@ -44,28 +45,23 @@ fun MonochromeAsyncImage(
 ) = SubcomposeAsyncImage(
     model = model,
     contentDescription = contentDescription,
-    modifier = modifier.clip(RoundedCornerShape(4.dp)),
+    modifier = modifier.clip(CircleShape),
     transform = transform,
     loading = loading ?: {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = alternateImageModifier.background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            modifier = alternateImageModifier.padding(4.dp)
         ) {
             CircularProgressIndicator()
         }
     },
     success = success,
     error = error ?: {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = alternateImageModifier.background(MaterialTheme.colorScheme.surfaceContainerHighest)
-        ) {
-            Image(
-                painter = painterResource(R.mipmap.main_icon_foreground),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
-            )
-        }
+        Icon(
+            Icons.Default.Person,
+            contentDescription = "Generic Profile Icon",
+            modifier = Modifier.size(30.dp)
+        )
     },
     onLoading = onLoading,
     onSuccess = onSuccess,

@@ -19,10 +19,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.github.zzorgg.beezle.ui.theme.CardBackground
-import com.github.zzorgg.beezle.ui.theme.PrimaryBlue
-import com.github.zzorgg.beezle.ui.theme.TextSecondary
-import com.github.zzorgg.beezle.ui.theme.TextTertiary
 
 @Composable
 fun ModernCard(
@@ -44,9 +40,6 @@ fun ModernCard(
                 } else Modifier
             ),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = CardBackground
-        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
@@ -91,7 +84,7 @@ fun GradientButton(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    color = if (enabled) PrimaryBlue else TextTertiary.copy(alpha = 0.3f)
+                    color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
                 ),
             contentAlignment = Alignment.Center
         ) {
@@ -146,7 +139,7 @@ fun StatsCard(
             Column {
                 Text(
                     text = title,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSecondary,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -159,7 +152,7 @@ fun StatsCard(
                 )
                 Text(
                     text = subtitle,
-                    color = TextTertiary,
+                    color = MaterialTheme.colorScheme.onTertiary,
                     fontSize = 12.sp
                 )
             }
@@ -188,7 +181,7 @@ fun ModernAvatar(
             .size(size.dp)
             .clip(RoundedCornerShape((size * 0.25f).dp))
             .background(
-                color = PrimaryBlue
+                color = MaterialTheme.colorScheme.primary
             ),
         contentAlignment = Alignment.Center
     ) {

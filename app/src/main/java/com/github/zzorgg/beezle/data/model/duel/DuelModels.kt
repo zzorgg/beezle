@@ -5,7 +5,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class DuelUser(
     val id: String,
-    val username: String
+    val username: String,
+    val avatarUrl: String?
 )
 
 // Duel mode selection

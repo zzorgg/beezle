@@ -119,11 +119,13 @@ class DuelRepository @Inject constructor(
 
                 val player1 = DuelUser(
                     id = message.data.player_id,
-                    username = currentUser?.username ?: "You"
+                    username = currentUser?.username ?: "You",
+                    avatarUrl = currentUser?.avatarUrl
                 )
                 val player2 = DuelUser(
                     id = message.data.opponent_id,
-                    username = message.data.opponent_name
+                    username = message.data.opponent_name,
+                    avatarUrl = message.data.opponent_id
                 )
 
                 val room = DuelRoom(
@@ -296,7 +298,8 @@ class DuelRepository @Inject constructor(
     fun startDuel(username: String, mode: DuelMode) {
         val user = DuelUser(
             id = generateUserId(),
-            username = username
+            username = username,
+            avatarUrl = null
         )
 
         currentUser = user

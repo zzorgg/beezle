@@ -23,12 +23,6 @@ import com.github.zzorgg.beezle.ui.components.GradientButton
 import com.github.zzorgg.beezle.ui.components.ModernCard
 import androidx.compose.ui.graphics.Color
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
-import com.github.zzorgg.beezle.ui.theme.AccentGreen
-import com.github.zzorgg.beezle.ui.theme.BackgroundDark
-import com.github.zzorgg.beezle.ui.theme.PrimaryBlue
-import com.github.zzorgg.beezle.ui.theme.TextPrimary
-import com.github.zzorgg.beezle.ui.theme.TextSecondary
-import com.github.zzorgg.beezle.ui.theme.TextTertiary
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
 @Composable
@@ -48,7 +42,6 @@ fun WalletOnboardingScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = BackgroundDark
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -72,7 +65,7 @@ fun WalletOnboardingScreen(
                         modifier = Modifier
                             .size(80.dp)
                             .background(
-                                color = if (walletState.isConnected) AccentGreen else PrimaryBlue,
+                                color = if (walletState.isConnected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
                                 shape = RoundedCornerShape(20.dp)
                             ),
                         contentAlignment = Alignment.Center
@@ -93,7 +86,7 @@ fun WalletOnboardingScreen(
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold
                         ),
-                        color = TextPrimary,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         textAlign = TextAlign.Center
                     )
 
@@ -108,7 +101,7 @@ fun WalletOnboardingScreen(
                             fontSize = 16.sp,
                             lineHeight = 24.sp
                         ),
-                        color = TextSecondary,
+                        color = MaterialTheme.colorScheme.onSecondary,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
@@ -125,7 +118,7 @@ fun WalletOnboardingScreen(
                         ) {
                             Text(
                                 text = "Wallet Address",
-                                color = TextSecondary,
+                                color = MaterialTheme.colorScheme.onSecondary,
                                 fontSize = 14.sp
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -133,7 +126,7 @@ fun WalletOnboardingScreen(
                                 text = walletState.publicKey?.take(8) + "..." + walletState.publicKey?.takeLast(
                                     8
                                 ),
-                                color = TextPrimary,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium
                             )
@@ -142,13 +135,13 @@ fun WalletOnboardingScreen(
 
                             Text(
                                 text = "Balance",
-                                color = TextSecondary,
+                                color = MaterialTheme.colorScheme.onSecondary,
                                 fontSize = 14.sp
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "${walletState.balance ?: 0.0} SOL",
-                                color = TextPrimary,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -174,7 +167,7 @@ fun WalletOnboardingScreen(
                                     modifier = Modifier
                                         .size(48.dp)
                                         .background(
-                                            color = PrimaryBlue.copy(alpha = 0.1f),
+                                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f),
                                             shape = RoundedCornerShape(12.dp)
                                         ),
                                     contentAlignment = Alignment.Center
@@ -182,7 +175,7 @@ fun WalletOnboardingScreen(
                                     Icon(
                                         imageVector = Icons.Default.AccountBalanceWallet,
                                         contentDescription = null,
-                                        tint = PrimaryBlue,
+                                        tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(24.dp)
                                     )
                                 }
@@ -192,13 +185,13 @@ fun WalletOnboardingScreen(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = "Connect Phantom Wallet",
-                                        color = TextPrimary,
+                                        color = MaterialTheme.colorScheme.onPrimary,
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                     Text(
                                         text = "Connect to Phantom, Solflare, or other MWA wallets",
-                                        color = TextSecondary,
+                                        color = MaterialTheme.colorScheme.onSecondary,
                                         fontSize = 14.sp
                                     )
                                 }
@@ -219,7 +212,7 @@ fun WalletOnboardingScreen(
                                     modifier = Modifier
                                         .size(48.dp)
                                         .background(
-                                            color = AccentGreen.copy(alpha = 0.1f),
+                                            color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f),
                                             shape = RoundedCornerShape(12.dp)
                                         ),
                                     contentAlignment = Alignment.Center
@@ -227,7 +220,7 @@ fun WalletOnboardingScreen(
                                     Icon(
                                         imageVector = Icons.Default.Security,
                                         contentDescription = null,
-                                        tint = AccentGreen,
+                                        tint = MaterialTheme.colorScheme.tertiary,
                                         modifier = Modifier.size(24.dp)
                                     )
                                 }
@@ -237,13 +230,13 @@ fun WalletOnboardingScreen(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = "Sign In with Solana",
-                                        color = TextPrimary,
+                                        color = MaterialTheme.colorScheme.onPrimary,
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                     Text(
                                         text = "Secure sign-in with wallet verification",
-                                        color = TextSecondary,
+                                        color = MaterialTheme.colorScheme.onSecondary,
                                         fontSize = 14.sp
                                     )
                                 }
@@ -281,7 +274,7 @@ fun WalletOnboardingScreen(
                     TextButton(
                         onClick = { walletManager.clearError() }
                     ) {
-                        Text("Dismiss", color = TextTertiary)
+                        Text("Dismiss", color = MaterialTheme.colorScheme.error)
                     }
                 }
 
@@ -296,7 +289,7 @@ fun WalletOnboardingScreen(
                         Icon(
                             imageVector = Icons.Default.Security,
                             contentDescription = null,
-                            tint = AccentGreen,
+                            tint = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.size(20.dp)
                         )
 
@@ -304,7 +297,7 @@ fun WalletOnboardingScreen(
 
                         Text(
                             text = "Your wallet stays secure. We never store your private keys.",
-                            color = TextSecondary,
+                            color = MaterialTheme.colorScheme.onSecondary,
                             fontSize = 14.sp,
                             modifier = Modifier.weight(1f)
                         )
@@ -330,7 +323,7 @@ fun WalletOnboardingScreen(
                         },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = TextSecondary
+                            contentColor = MaterialTheme.colorScheme.onSecondary
                         )
                     ) {
                         Text("Disconnect Wallet")
@@ -357,7 +350,7 @@ fun WalletOnboardingScreen(
                     ) {
                         Text(
                             text = "Skip for now (Demo mode)",
-                            color = TextTertiary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
                         )
                     }
@@ -375,7 +368,7 @@ fun WalletOnboardingScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
-                        color = PrimaryBlue
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }

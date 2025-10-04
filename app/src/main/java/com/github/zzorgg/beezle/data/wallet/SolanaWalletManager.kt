@@ -152,7 +152,7 @@ class SolanaWalletManager(application: Application) : AndroidViewModel(applicati
             val solanaUri = "https://solana.com".toUri()
             val app = getApplication<Application>()
             val res = app.resources
-            val iconResId = R.mipmap.ic_launcher
+            val iconResId = R.mipmap.main_icon_foreground
             val iconUri = try {
                 val type = res.getResourceTypeName(iconResId)
                 val name = res.getResourceEntryName(iconResId)
