@@ -1,5 +1,6 @@
 package com.github.zzorgg.beezle.ui.screens.duel.components
 
+import android.content.res.Configuration
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -20,7 +21,6 @@ import androidx.compose.material.icons.filled.Balance
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.SentimentDissatisfied
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -30,11 +30,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.zzorgg.beezle.data.model.duel.WebSocketMessage
+import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 
 
 @Composable
@@ -71,7 +72,8 @@ fun DuelCompleteScreen(
                 Icon(
                     Icons.Default.EmojiEvents,
                     contentDescription = "Victory",
-                    tint = Color(0xFFFFD700),
+                    tint = MaterialTheme.colorScheme.tertiary,
+//                    tint = Color(0xFFFFD700),
                     modifier = Modifier
                         .size(120.dp)
                         .scale(scale)
@@ -81,17 +83,16 @@ fun DuelCompleteScreen(
 
                 Text(
                     text = "VICTORY!",
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFD700)
-                    )
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.tertiary
+//                    color = Color(0xFFFFD700),
                 )
 
                 Text(
                     text = "Congratulations! You won the duel!",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        color = Color.White.copy(alpha = 0.8f)
-                    ),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center
                 )
             }
@@ -100,7 +101,7 @@ fun DuelCompleteScreen(
                 Icon(
                     Icons.Default.Balance,
                     contentDescription = "Draw",
-                    tint = Color(0xFF60A5FA),
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .size(120.dp)
                         .scale(scale)
@@ -110,17 +111,15 @@ fun DuelCompleteScreen(
 
                 Text(
                     text = "DRAW!",
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF60A5FA)
-                    )
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
                 )
 
                 Text(
                     text = "Great match! You're evenly matched!",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        color = Color.White.copy(alpha = 0.8f)
-                    ),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center
                 )
             }
@@ -129,7 +128,8 @@ fun DuelCompleteScreen(
                 Icon(
                     Icons.Default.SentimentDissatisfied,
                     contentDescription = "Defeat",
-                    tint = Color(0xFFEF4444),
+                    tint = MaterialTheme.colorScheme.error,
+//                    tint = Color(0xFFEF4444),
                     modifier = Modifier
                         .size(120.dp)
                         .scale(scale)
@@ -139,17 +139,16 @@ fun DuelCompleteScreen(
 
                 Text(
                     text = "DEFEAT",
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFEF4444)
-                    )
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.error
+//                            color = Color(0xFFEF4444)
                 )
 
                 Text(
                     text = "Better luck next time! Keep practicing!",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        color = Color.White.copy(alpha = 0.8f)
-                    ),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center
                 )
             }
@@ -160,10 +159,9 @@ fun DuelCompleteScreen(
         // Final Scores
         Text(
             text = "Match Complete",
-            style = MaterialTheme.typography.headlineSmall.copy(
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold
         )
 
         Spacer(modifier = Modifier.height(48.dp))
@@ -175,9 +173,6 @@ fun DuelCompleteScreen(
         ) {
             OutlinedButton(
                 onClick = onExit,
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color.White
-                ),
                 modifier = Modifier.weight(1f)
             ) {
                 Text("Exit")
@@ -188,16 +183,66 @@ fun DuelCompleteScreen(
             Button(
                 onClick = onPlayAgain,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF2196F3) // Vivid blue
-                )
             ) {
                 Text(
                     text = "Play Again",
-                    color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun DuelCompleteScreenPreview() {
+    BeezleTheme {
+        DuelCompleteScreen(
+            finalResult = WebSocketMessage.DuelComplete(
+                data = WebSocketMessage.DuelCompleteData(
+                    winner_id = "same"
+                )
+            ),
+            currentUserId = "same",
+            onPlayAgain = {},
+            onExit = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun DuelCompleteScreenDefeatPreview() {
+    BeezleTheme {
+        DuelCompleteScreen(
+            finalResult = WebSocketMessage.DuelComplete(
+                data = WebSocketMessage.DuelCompleteData(
+                    winner_id = "same"
+                )
+            ),
+            currentUserId = "notsame",
+            onPlayAgain = {},
+            onExit = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun DuelCompleteScreenDrawPreview() {
+    BeezleTheme {
+        DuelCompleteScreen(
+            finalResult = WebSocketMessage.DuelComplete(
+                data = WebSocketMessage.DuelCompleteData(
+                    winner_id = null
+                )
+            ),
+            currentUserId = "notsame",
+            onPlayAgain = {},
+            onExit = {}
+        )
     }
 }
