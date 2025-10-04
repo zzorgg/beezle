@@ -51,7 +51,7 @@ fun AuthPrompt(
 @Composable
 private fun AuthPromptPreview() {
     MaterialTheme {
-        AuthPrompt(true, modifier = Modifier.padding(top  = 40.dp)) { }
+        AuthPrompt(true, modifier = Modifier.padding(top = 40.dp)) { }
     }
 }
 
@@ -60,6 +60,6 @@ private fun AuthPromptPreview() {
 @Composable
 private fun AuthPromptPreview2() {
     MaterialTheme {
-        AuthPrompt(false, modifier = Modifier.padding(top  = 40.dp)) { }
+        AuthPrompt(false, modifier = Modifier.padding(top = 40.dp)) { }
     }
 }
