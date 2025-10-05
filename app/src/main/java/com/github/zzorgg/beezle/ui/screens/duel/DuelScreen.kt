@@ -403,7 +403,7 @@ private fun SearchingScreen(
         // Do not show raw queue position to avoid confusion; show elapsed wait time instead
         if (elapsedSeconds > 0) {
             Text(
-                text = "Waiting: ${'$'}{elapsedSeconds}s",
+                text = "Waiting: ${elapsedSeconds}s",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp
             )
@@ -589,7 +589,7 @@ private fun GameplayScreen(
         // Question
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
         ) {
             Column(Modifier.padding(20.dp)) {
                 Text(

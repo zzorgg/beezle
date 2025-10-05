@@ -98,7 +98,7 @@ fun SearchingScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Do not show raw queue position; only elapsed wait to avoid confusion
-        val waitedText = if (queueSince != null) "Waiting: ${'$'}{elapsedSeconds}s" else "Searching for the best match..."
+        val waitedText = if (queueSince != null) "Waiting: ${elapsedSeconds}s" else "Searching for the best match..."
 
         Text(
             text = waitedText,

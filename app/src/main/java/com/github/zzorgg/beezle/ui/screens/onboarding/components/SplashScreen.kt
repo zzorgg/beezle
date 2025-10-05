@@ -1,5 +1,6 @@
 package com.github.zzorgg.beezle.ui.screens.onboarding.components
 
+import android.content.res.Configuration
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -17,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import androidx.compose.material3.MaterialTheme
+import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 
 @Composable
 fun SplashScreen(onFinished: () -> Unit) {
@@ -29,7 +31,9 @@ fun SplashScreen(onFinished: () -> Unit) {
                 context.assets.open("beezle.png").use { input ->
                     BitmapFactory.decodeStream(input)
                 }
-            } catch (_: Exception) { null }
+            } catch (_: Exception) {
+                null
+            }
         }
         imageBitmap = bmp?.asImageBitmap()
         // Keep a short delay (retain previous timing behavior)
@@ -39,7 +43,9 @@ fun SplashScreen(onFinished: () -> Unit) {
     }
 
     Box(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
         imageBitmap?.let { bmp ->
@@ -53,8 +59,11 @@ fun SplashScreen(onFinished: () -> Unit) {
     }
 }
 
-@Preview
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun PreviewSplashScreen() {
-    SplashScreen(onFinished = {})
+    BeezleTheme {
+        SplashScreen(onFinished = {})
+    }
 }
