@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 // Legacy component - All gameplay logic has been moved to DuelScreen.kt
 // This file is kept only for the PlayerCard component used elsewhere
 
-@Suppress("unused")
 @Composable
 fun PlayerCard(
     username: String,

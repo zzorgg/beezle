@@ -1,5 +1,6 @@
 package com.github.zzorgg.beezle.ui.screens.duel.components.gameplay
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,7 +23,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 
 
 @Composable
@@ -36,7 +39,7 @@ fun AnswerButton(
     val backgroundColor = when {
         isSelected && hasAnswered -> MaterialTheme.colorScheme.secondaryContainer
         isSelected -> MaterialTheme.colorScheme.primaryContainer
-        else -> MaterialTheme.colorScheme.surfaceContainerLowest
+        else -> MaterialTheme.colorScheme.surfaceContainer
     }
 
     val borderColor =
@@ -87,5 +90,19 @@ fun AnswerButton(
                 modifier = Modifier.weight(1f)
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun AnswerButtonPreview() {
+    BeezleTheme {
+        AnswerButton(
+            text = "test",
+            index = 1,
+            isSelected = false,
+            hasAnswered =false
+        ) { }
     }
 }

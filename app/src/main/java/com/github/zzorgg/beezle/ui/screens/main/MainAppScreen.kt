@@ -1,5 +1,6 @@
 package com.github.zzorgg.beezle.ui.screens.main
 
+import android.content.res.Configuration
 import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.animateColorAsState
@@ -201,7 +202,7 @@ fun MainAppScreen(
                         .align(Alignment.Center)
                         .clip(CircleShape),
                     shape = CircleShape,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f)),
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                 ) {
                     Row(
@@ -370,7 +371,7 @@ fun MainAppScreen(
                     val selected = subject == selectedSubject
                     val baseColor = if (subject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
                     val bgColor by animateColorAsState(
-                        if (selected) baseColor.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surface,
+                        if (selected) baseColor.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceContainer,
                         label = "subjectBg"
                     )
                     val textColor by animateColorAsState(
@@ -409,7 +410,7 @@ fun MainAppScreen(
                             val mode = if (selectedSubject == Subject.MATH) "math" else "cs"
                             navigateToCallback("duel/$mode")
                         },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -434,7 +435,7 @@ fun MainAppScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { navigateToCallback("practice/${selectedSubject.name.lowercase()}") },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -465,7 +466,8 @@ fun MainAppScreen(
     }
 }
 
-@Preview
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun MainAppScreenPreview() {
     BeezleTheme {
