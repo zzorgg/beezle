@@ -97,12 +97,11 @@ fun SearchingScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        val positionText =
-            queuePosition?.let { "Your position in queue: #$it" } ?: "Joining queue..."
-        val waitedText = if (queueSince != null) "Waiting: ${elapsedSeconds}s" else ""
+        // Do not show raw queue position; only elapsed wait to avoid confusion
+        val waitedText = if (queueSince != null) "Waiting: ${'$'}{elapsedSeconds}s" else "Searching for the best match..."
 
         Text(
-            text = positionText + if (waitedText.isNotEmpty()) "\n$waitedText" else "",
+            text = waitedText,
             style = MaterialTheme.typography.bodyLarge.copy(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
             ),
@@ -121,7 +120,6 @@ fun SearchingScreen(
                 modifier = Modifier
                     .fillMaxWidth(0.7f)
                     .height(48.dp),
-//                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
             ) {
                 Text(
                     text = "Cancel Search",

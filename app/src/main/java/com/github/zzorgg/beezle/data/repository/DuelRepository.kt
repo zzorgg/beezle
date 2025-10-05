@@ -38,6 +38,9 @@ class DuelRepository @Inject constructor(
     private var currentRound: Int = 0
     private val totalRounds = 5
 
+    // Debounce join attempts to avoid spamming the server and duplicate queued responses
+    private var lastJoinAttemptAt: Long = 0L
+
     // Question bank for client-side question generation
     private val mathQuestions = listOf(
         Triple("15 + 27 = ?", listOf("40", "41", "42", "43"), 2),
@@ -64,6 +67,7 @@ class DuelRepository @Inject constructor(
     companion object {
         private const val TAG = "DuelRepository"
         private const val QUESTION_TIME_LIMIT = 15
+        private const val JOIN_QUEUE_DEBOUNCE_MS = 3000L
     }
 
     init {
@@ -126,7 +130,7 @@ class DuelRepository @Inject constructor(
                 val player2 = DuelUser(
                     id = message.data.opponent_id,
                     username = message.data.opponent_name,
-                    avatarUrl = message.data.opponent_id
+                    avatarUrl = null // no avatar provided by server; avoid misusing opponent_id as URL
                 )
 
                 val room = DuelRoom(
@@ -303,7 +307,7 @@ class DuelRepository @Inject constructor(
     fun startDuel(username: String, mode: DuelMode) {
         // Use Firebase UID and display name when available
         val fbUser = authRepository.currentUser()
-        val resolvedUsername = fbUser?.displayName?.takeIf { it.isNotBlank() } ?: username.ifBlank { "Player" }
+        val resolvedUsername = (fbUser?.displayName?.takeIf { it.isNotBlank() } ?: username.ifBlank { "Player" }).trim()
         val resolvedId = fbUser?.uid ?: generateUserId()
         val avatar = fbUser?.photoUrl?.toString()
 
@@ -338,6 +342,12 @@ class DuelRepository @Inject constructor(
     }
 
     private fun joinQueue(user: DuelUser) {
+        val now = System.currentTimeMillis()
+        if (now - lastJoinAttemptAt < JOIN_QUEUE_DEBOUNCE_MS) {
+            Log.d(TAG, "⏱️ Skipping join_queue due to debounce")
+            return
+        }
+
         if (!_duelState.value.isConnected) {
             _duelState.value = _duelState.value.copy(
                 error = "Not connected to server"
@@ -349,13 +359,15 @@ class DuelRepository @Inject constructor(
             return
         }
 
-        val now = System.currentTimeMillis()
+        lastJoinAttemptAt = now
+
+        val queuedAt = System.currentTimeMillis()
         _duelState.value = _duelState.value.copy(
             isInQueue = true,
             isSearching = true,
             error = null,
             queuePosition = null,
-            queueSince = now
+            queueSince = queuedAt
         )
 
         val joinQueueData = WebSocketMessage.JoinQueueData(

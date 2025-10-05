@@ -400,20 +400,19 @@ private fun SearchingScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (queuePosition != null) {
-            Text(
-                text = "Position in queue: #$queuePosition",
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
-
+        // Do not show raw queue position to avoid confusion; show elapsed wait time instead
         if (elapsedSeconds > 0) {
             Text(
-                text = "Waiting: ${elapsedSeconds}s",
+                text = "Waiting: ${'$'}{elapsedSeconds}s",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp
+            )
+        } else {
+            Text(
+                text = "Searching for the best match...",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center
             )
         }
 
