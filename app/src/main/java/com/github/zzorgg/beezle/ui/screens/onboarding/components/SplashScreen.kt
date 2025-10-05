@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,11 +25,13 @@ import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 fun SplashScreen(onFinished: () -> Unit) {
     val context = LocalContext.current
     var imageBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+    val isDarkTheme = isSystemInDarkTheme()
 
     LaunchedEffect(Unit) {
+        val imageName = if (isDarkTheme) "beezle_dark.png" else "beezle_light.png"
         val bmp = withContext(Dispatchers.IO) {
             try {
-                context.assets.open("beezle.png").use { input ->
+                context.assets.open(imageName).use { input ->
                     BitmapFactory.decodeStream(input)
                 }
             } catch (_: Exception) {

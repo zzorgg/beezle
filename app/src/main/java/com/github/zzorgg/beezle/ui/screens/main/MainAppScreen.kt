@@ -111,6 +111,9 @@ fun MainAppScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                ),
                 title = { /* No title */ },
                 navigationIcon = {
                     Row(
@@ -202,7 +205,7 @@ fun MainAppScreen(
                         .align(Alignment.Center)
                         .clip(CircleShape),
                     shape = CircleShape,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.95f)),
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                 ) {
                     Row(
@@ -371,7 +374,7 @@ fun MainAppScreen(
                     val selected = subject == selectedSubject
                     val baseColor = if (subject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
                     val bgColor by animateColorAsState(
-                        if (selected) baseColor.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceContainer,
+                        if (selected) baseColor.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceContainerLow,
                         label = "subjectBg"
                     )
                     val textColor by animateColorAsState(
