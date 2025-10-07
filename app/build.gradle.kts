@@ -26,7 +26,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -39,6 +40,8 @@ android {
             )
         }
         debug {
+            isMinifyEnabled = false
+            isShrinkResources = false
             // Updated to use your production WebSocket URL for development as well
             buildConfigField(
                 "String",
