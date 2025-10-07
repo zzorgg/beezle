@@ -18,7 +18,7 @@ import com.github.zzorgg.beezle.ui.screens.main.MainAppScreenRoot
 import com.github.zzorgg.beezle.ui.screens.onboarding.OnboardingScreen
 import com.github.zzorgg.beezle.ui.screens.onboarding.components.SplashScreen
 import com.github.zzorgg.beezle.ui.screens.profile.ProfileScreenRoot
-import com.github.zzorgg.beezle.ui.screens.onboarding.components.WalletOnboardingScreen
+import com.github.zzorgg.beezle.ui.screens.onboarding.components.WalletOnboardingScreenRoot
 import com.github.zzorgg.beezle.ui.screens.wallet.WalletScreenRoot
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
@@ -60,7 +60,7 @@ class MainActivity : ComponentActivity() {
                         })
                     }
                     composable("wallet-onboarding") {
-                        WalletOnboardingScreen(
+                        WalletOnboardingScreenRoot(
                             onWalletConnected = {
                                 navController.navigate("main") {
                                     popUpTo("wallet-onboarding") { inclusive = true }

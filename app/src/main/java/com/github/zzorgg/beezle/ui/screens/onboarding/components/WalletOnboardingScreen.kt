@@ -1,6 +1,7 @@
 package com.github.zzorgg.beezle.ui.screens.onboarding.components
 
 import android.accounts.AccountManager
+import android.content.res.Configuration
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -18,17 +19,20 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.zzorgg.beezle.ui.components.GradientButton
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
+import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.screens.profile.NoGoogleAccountScreen
+import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 import java.util.Locale
 
 @Composable
-fun WalletOnboardingScreen(
+fun WalletOnboardingScreenRoot(
     onWalletConnected: () -> Unit = {},
     sender: ActivityResultSender
 ) {
@@ -42,6 +46,36 @@ fun WalletOnboardingScreen(
         return
     }
 
+
+    WalletOnboardingScreen(
+        walletState = walletState,
+        connectPhantomWalletCallback = {
+            val accountManager = AccountManager.get(context)
+            val accounts = accountManager.getAccountsByType("com.google")
+            if (accounts.isEmpty()) {
+                showNoGoogleAccountDialog = true
+            } else {
+                walletManager.connectWallet(sender)
+            }
+        },
+        clearErrorCallback = { walletManager.clearError() },
+        connectWalletCallback = { walletManager.connectWallet(sender) },
+        disconnectWalletCallback = { walletManager.disconnectWallet(sender) },
+        onWalletConnected = onWalletConnected,
+        modifier = Modifier,
+    )
+}
+
+@Composable
+fun WalletOnboardingScreen(
+    walletState: WalletState,
+    connectPhantomWalletCallback: () -> Unit,
+    clearErrorCallback: () -> Unit,
+    connectWalletCallback: () -> Unit,
+    disconnectWalletCallback: () -> Unit,
+    onWalletConnected: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     // Content animation
     val contentAlpha by animateFloatAsState(
         targetValue = 1f,
@@ -53,7 +87,7 @@ fun WalletOnboardingScreen(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background // Use theme background
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -71,8 +105,10 @@ fun WalletOnboardingScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     // Wallet Icon with connection status
-                    val bgColor = if (walletState.isConnected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
-                    val iconTint = if (walletState.isConnected) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onPrimary
+                    val bgColor =
+                        if (walletState.isConnected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
+                    val iconTint =
+                        if (walletState.isConnected) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onPrimary
                     Box(
                         modifier = Modifier
                             .size(80.dp)
@@ -127,7 +163,9 @@ fun WalletOnboardingScreen(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                     ) {
                         Column(
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
@@ -137,7 +175,8 @@ fun WalletOnboardingScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = walletState.publicKey?.let { "${it.take(8)}...${it.takeLast(8)}" } ?: "—",
+                                text = walletState.publicKey?.let { "${it.take(8)}...${it.takeLast(8)}" }
+                                    ?: "—",
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium
@@ -152,7 +191,11 @@ fun WalletOnboardingScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             val bal = walletState.balance
-                            val balanceText = if (bal != null) String.format(Locale.US, "%.4f SOL", bal) else "— SOL"
+                            val balanceText = if (bal != null) String.format(
+                                Locale.US,
+                                "%.4f SOL",
+                                bal
+                            ) else "— SOL"
                             Text(
                                 text = balanceText,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -169,20 +212,14 @@ fun WalletOnboardingScreen(
                     ) {
                         // Connect Phantom Wallet Card
                         Card(
-                            onClick = {
-                                val accountManager = AccountManager.get(context)
-                                val accounts = accountManager.getAccountsByType("com.google")
-                                if (accounts.isEmpty()) {
-                                    showNoGoogleAccountDialog = true
-                                } else {
-                                    walletManager.connectWallet(sender)
-                                }
-                            },
+                            onClick = connectPhantomWalletCallback,
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                             shape = RoundedCornerShape(16.dp)
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Box(
@@ -260,9 +297,7 @@ fun WalletOnboardingScreen(
                     }
 
                     // Clear error button
-                    TextButton(
-                        onClick = { walletManager.clearError() }
-                    ) {
+                    TextButton(onClick = clearErrorCallback) {
                         Text("Dismiss", color = MaterialTheme.colorScheme.error)
                     }
                 }
@@ -274,7 +309,9 @@ fun WalletOnboardingScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -309,9 +346,7 @@ fun WalletOnboardingScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedButton(
-                        onClick = {
-                            walletManager.disconnectWallet(sender)
-                        },
+                        onClick = disconnectWalletCallback,
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -322,9 +357,7 @@ fun WalletOnboardingScreen(
                 } else {
                     GradientButton(
                         text = if (walletState.isLoading) "Connecting..." else "Connect Wallet",
-                        onClick = {
-                            walletManager.connectWallet(sender)
-                        },
+                        onClick = connectWalletCallback,
                         modifier = Modifier.fillMaxWidth(),
                         icon = Icons.Default.AccountBalanceWallet,
                         enabled = !walletState.isLoading
@@ -364,5 +397,21 @@ fun WalletOnboardingScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun WalletOnboardingPreview() {
+    BeezleTheme {
+        WalletOnboardingScreen(
+            walletState = WalletState(),
+            connectPhantomWalletCallback = {},
+            clearErrorCallback = {},
+            connectWalletCallback = {},
+            disconnectWalletCallback = {},
+            onWalletConnected = {}
+        )
     }
 }
