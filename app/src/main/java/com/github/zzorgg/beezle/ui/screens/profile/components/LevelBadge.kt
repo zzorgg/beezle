@@ -19,14 +19,14 @@ fun LevelBadge(text: String) {
     Box(
         modifier = Modifier
             .background(
-                MaterialTheme.colorScheme.primaryContainer,
+                MaterialTheme.colorScheme.primary,
                 RoundedCornerShape(20.dp)
             )
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Text(
             text = text,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            color = MaterialTheme.colorScheme.onPrimary,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium
         )
