@@ -1,28 +1,31 @@
 package com.github.zzorgg.beezle.ui.screens.onboarding.components
 
+import android.accounts.AccountManager
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.zzorgg.beezle.ui.components.GradientButton
-import com.github.zzorgg.beezle.ui.components.ModernCard
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
+import com.github.zzorgg.beezle.ui.screens.profile.NoGoogleAccountScreen
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
+import java.util.Locale
 
 @Composable
 fun WalletOnboardingScreen(
@@ -31,6 +34,13 @@ fun WalletOnboardingScreen(
 ) {
     val walletManager: SolanaWalletManager = viewModel()
     val walletState by walletManager.walletState.collectAsState()
+    val context = LocalContext.current
+    var showNoGoogleAccountDialog by remember { mutableStateOf(false) }
+
+    if (showNoGoogleAccountDialog) {
+        NoGoogleAccountScreen()
+        return
+    }
 
     // Content animation
     val contentAlpha by animateFloatAsState(
@@ -41,6 +51,7 @@ fun WalletOnboardingScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background // Use theme background
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -87,7 +98,7 @@ fun WalletOnboardingScreen(
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold
                         ),
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        color = MaterialTheme.colorScheme.onBackground, // better contrast on background
                         textAlign = TextAlign.Center
                     )
 
@@ -95,14 +106,14 @@ fun WalletOnboardingScreen(
 
                     Text(
                         text = if (walletState.isConnected)
-                            "Your ${'$'}{walletState.walletName} wallet is now connected to Beezle"
+                            "Your ${walletState.walletName ?: "Phantom"} wallet is now connected to Beezle"
                         else
                             "Connect your Solana wallet to start earning SOL through competitive duels",
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontSize = 16.sp,
                             lineHeight = 24.sp
                         ),
-                        color = MaterialTheme.colorScheme.onSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, // secondary text on bg
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
@@ -112,22 +123,22 @@ fun WalletOnboardingScreen(
 
                 // Show wallet info if connected
                 if (walletState.isConnected) {
-                    ModernCard {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                    ) {
                         Column(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
                                 text = "Wallet Address",
-                                color = MaterialTheme.colorScheme.onSecondary,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 14.sp
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = walletState.publicKey?.take(8) + "..." + walletState.publicKey?.takeLast(
-                                    8
-                                ),
-                                color = MaterialTheme.colorScheme.onPrimary,
+                                text = walletState.publicKey?.let { "${it.take(8)}...${it.takeLast(8)}" } ?: "—",
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium
                             )
@@ -136,39 +147,49 @@ fun WalletOnboardingScreen(
 
                             Text(
                                 text = "Balance",
-                                color = MaterialTheme.colorScheme.onSecondary,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 14.sp
                             )
                             Spacer(modifier = Modifier.height(8.dp))
+                            val bal = walletState.balance
+                            val balanceText = if (bal != null) String.format(Locale.US, "%.4f SOL", bal) else "— SOL"
                             Text(
-                                text = "${'$'}{walletState.balance ?: 0.0} SOL",
-                                color = MaterialTheme.colorScheme.onPrimary,
+                                text = balanceText,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                     }
                 } else {
-                    // Wallet Options Cards
+                    // Wallet Options (Phantom only)
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Connect Existing Wallet Card
-                        ModernCard(
+                        // Connect Phantom Wallet Card
+                        Card(
                             onClick = {
-                                walletManager.connectWallet(sender)
-                            }
+                                val accountManager = AccountManager.get(context)
+                                val accounts = accountManager.getAccountsByType("com.google")
+                                if (accounts.isEmpty()) {
+                                    showNoGoogleAccountDialog = true
+                                } else {
+                                    walletManager.connectWallet(sender)
+                                }
+                            },
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Box(
                                     modifier = Modifier
                                         .size(48.dp)
                                         .background(
-                                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f),
+                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                                             shape = RoundedCornerShape(12.dp)
                                         ),
                                     contentAlignment = Alignment.Center
@@ -186,73 +207,40 @@ fun WalletOnboardingScreen(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = "Connect Phantom Wallet",
-                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                     Text(
-                                        text = "Connect to Phantom, Solflare, or other MWA wallets",
-                                        color = MaterialTheme.colorScheme.onSecondary,
+                                        text = "Only Phantom is supported right now",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 14.sp
                                     )
                                 }
                             }
                         }
 
-                        // Sign In with Solana Card
-                        ModernCard(
-                            onClick = {
-                                walletManager.signInWithSolana(sender)
-                            }
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .background(
-                                            color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f),
-                                            shape = RoundedCornerShape(12.dp)
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Security,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.tertiary,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
+                        // Note under the card
+                        Text(
+                            text = "Note: We currently support Phantom only.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
 
-                                Spacer(modifier = Modifier.width(16.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "Sign In with Solana",
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Text(
-                                        text = "Secure sign-in with wallet verification",
-                                        color = MaterialTheme.colorScheme.onSecondary,
-                                        fontSize = 14.sp
-                                    )
-                                }
-                            }
-                        }
+                        // Removed: Sign In with Solana card (not supported now)
                     }
                 }
 
                 // Error Display
                 walletState.error?.let { error ->
                     Spacer(modifier = Modifier.height(16.dp))
-                    ModernCard(
-                        modifier = Modifier.fillMaxWidth()
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                     ) {
                         Row(
+                            modifier = Modifier.padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
@@ -282,9 +270,11 @@ fun WalletOnboardingScreen(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 // Security Note
-                ModernCard {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -298,7 +288,7 @@ fun WalletOnboardingScreen(
 
                         Text(
                             text = "Your wallet stays secure. We never store your private keys.",
-                            color = MaterialTheme.colorScheme.onSecondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp,
                             modifier = Modifier.weight(1f)
                         )
@@ -324,7 +314,7 @@ fun WalletOnboardingScreen(
                         },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.onSecondary
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     ) {
                         Text("Disconnect Wallet")

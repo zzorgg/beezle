@@ -172,6 +172,9 @@ fun ProfileScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Profile") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
                 navigationIcon = {
                     IconButton(onClick = navigateBackCallback) {
                         Icon(
@@ -207,6 +210,9 @@ fun ProfileScreen(
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
+                }
+                AuthStatus.NoGoogleAccount -> {
+                    NoGoogleAccountScreen()
                 }
                 is AuthStatus.Error -> {
                     val msg = uiState.firebaseAuthStatus.message
@@ -293,6 +299,8 @@ fun ProfileScreen(
                                 }
                             }
                         }
+
+                        AuthStatus.NoGoogleAccount -> TODO()
                     }
                 }
             }
@@ -319,7 +327,7 @@ private fun HeroProfileSection(firebaseUser: FirebaseUser?, profile: UserProfile
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape) // updated to PrimaryBlue border per requirement
+                    .border(2.dp, MaterialTheme.colorScheme.surfaceContainerLow, CircleShape) // updated to PrimaryBlue border per requirement
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
             )
             Spacer(Modifier.height(14.dp))
@@ -358,7 +366,7 @@ private fun ProfileInfoCard(
     Card(
         modifier = Modifier
             .fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
         Column(Modifier.padding(16.dp)) {
             // Removed 'Account' heading per request
@@ -424,56 +432,57 @@ private fun WalletCard(
             .fillMaxWidth()
             .defaultMinSize(minHeight = 190.dp),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
-        if (!isConnected) {
-            // Disconnected: show left-side message + Connect button, and sleeping GIF on the right
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text("Wallet not connected", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 18.sp)
-                    Spacer(Modifier.height(8.dp))
-                    Text("Connect your Phantom wallet to continue.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-                    Spacer(Modifier.height(12.dp))
-                    Button(
-                        onClick = connectWalletCallback,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
-                        shape = RoundedCornerShape(14.dp)
-                    ) { Text("Connect Wallet") }
-                }
-                Spacer(Modifier.width(16.dp))
-                AsyncImage(
-                    model = "file:///android_asset/sleeping.gif",
-                    contentDescription = "Wallet status animation",
-                    modifier = Modifier
-                        .size(110.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-                )
-            }
-        } else {
-            // Connected: normal content, but remove any 'Linked' status label
-            Box(Modifier.fillMaxSize()) {
-                // Precompute themed color outside Canvas draw scope
-                val gridColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
-                // Subtle dots background
-                Canvas(modifier = Modifier.matchParentSize()) {
-                    val step = 28.dp.toPx()
-                    val radius = 2.dp.toPx()
-                    var y = radius
-                    while (y < size.height) {
-                        var x = radius
-                        while (x < size.width) {
-                            drawCircle(gridColor, radius, androidx.compose.ui.geometry.Offset(x, y))
-                            x += step
-                        }
-                        y += step
+        Box(Modifier.fillMaxSize()) {
+            // Precompute themed color outside Canvas draw scope
+            val gridColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
+            // Subtle dots background
+            Canvas(modifier = Modifier.matchParentSize()) {
+                val step = 28.dp.toPx()
+                val radius = 2.dp.toPx()
+                var y = radius
+                while (y < size.height) {
+                    var x = radius
+                    while (x < size.width) {
+                        drawCircle(gridColor, radius, androidx.compose.ui.geometry.Offset(x, y))
+                        x += step
                     }
+                    y += step
                 }
+            }
+
+            if (!isConnected) {
+                // Disconnected: show left-side message + Connect button, and sleeping GIF on the right
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Wallet not connected", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 18.sp)
+                        Spacer(Modifier.height(8.dp))
+                        Text("Connect your Phantom wallet to continue.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                        Spacer(Modifier.height(12.dp))
+                        Button(
+                            onClick = connectWalletCallback,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
+                            shape = RoundedCornerShape(14.dp)
+                        ) { Text("Connect Wallet") }
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    AsyncImage(
+                        model = "file:///android_asset/sleeping.gif",
+                        contentDescription = "Wallet status animation",
+                        modifier = Modifier
+                            .size(110.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                    )
+                }
+            } else {
+                // Connected: normal content, but remove any 'Linked' status label
                 Column(Modifier
                     .fillMaxWidth()
                     .padding(20.dp)) {

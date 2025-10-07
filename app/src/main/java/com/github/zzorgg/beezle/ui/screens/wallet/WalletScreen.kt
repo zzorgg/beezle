@@ -45,6 +45,7 @@ import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.EphemeralGreenTick
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
+import java.util.Locale
 
 @Composable
 fun WalletScreenRoot(
@@ -146,7 +147,7 @@ fun WalletScreen(
 
                     if (walletState.isConnected) {
                         Text(
-                            text = "Connected to ${walletState.walletName}",
+                            text = "Connected to ${walletState.walletName ?: "Phantom"}",
                             color = MaterialTheme.colorScheme.tertiary,
                             style = MaterialTheme.typography.bodyLarge
                         )
@@ -154,19 +155,17 @@ fun WalletScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "Address: ${walletState.publicKey?.take(8)}...${
-                                walletState.publicKey?.takeLast(
-                                    8
-                                )
-                            }",
+                            text = "Address: " + (walletState.publicKey?.let { "${it.take(8)}...${it.takeLast(8)}" } ?: "—"),
 //                            color = TextSecondary,
                             style = MaterialTheme.typography.bodyLarge
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
+                        val bal = walletState.balance
+                        val balanceText = if (bal != null) String.format(Locale.US, "%.4f SOL", bal) else "— SOL"
                         Text(
-                            text = "Balance: ${walletState.balance ?: 0.0} SOL",
+                            text = "Balance: $balanceText",
 //                            color = TextPrimary,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold

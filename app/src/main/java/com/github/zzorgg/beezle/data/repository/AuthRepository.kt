@@ -7,6 +7,7 @@ import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.NoCredentialException
 import com.github.zzorgg.beezle.R
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -22,6 +23,8 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 private const val TAG = "FirebaseAuthRepository"
+
+class NoGoogleAccountFoundException : Exception("No Google account found on the device.")
 
 interface AuthRepository {
     fun currentUser(): FirebaseUser?
@@ -62,6 +65,9 @@ class FirebaseAuthRepository @Inject constructor(
             } else {
                 throw IllegalArgumentException("Credential is not of type Google ID!")
             }
+        } catch (e: NoCredentialException) {
+            Log.e(TAG, "Sign in failed: No credentials available.", e)
+            throw NoGoogleAccountFoundException()
         } catch (e: Exception) {
             Log.e(TAG, "Sign in failed", e)
             null

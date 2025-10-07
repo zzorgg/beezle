@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.zzorgg.beezle.data.model.profile.UserProfile
 import com.github.zzorgg.beezle.data.repository.AuthRepository
+import com.github.zzorgg.beezle.data.repository.NoGoogleAccountFoundException
 import com.github.zzorgg.beezle.data.repository.UserProfileRepository
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,6 +20,7 @@ sealed interface AuthStatus {
     object Loading : AuthStatus
     object Success : AuthStatus
     object Waiting : AuthStatus
+    object NoGoogleAccount : AuthStatus
     data class Error(val message: String) : AuthStatus
 }
 
@@ -111,15 +113,26 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun acknowledgeNoGoogleAccountNotice() {
+        _profileViewState.update { it.copy(firebaseAuthStatus = AuthStatus.Waiting) }
+    }
+
     fun signin(activity: Activity) {
         viewModelScope.launch {
             _profileViewState.update { it.copy(firebaseAuthStatus = AuthStatus.Loading) }
-            val user = authRepository.signin(activity)
-            if (user == null) {
-                _profileViewState.update { it.copy(firebaseAuthStatus = AuthStatus.Error("Unable to sign-in")) }
-                return@launch
+            try {
+                val user = authRepository.signin(activity)
+                if (user == null) {
+                    _profileViewState.update { it.copy(firebaseAuthStatus = AuthStatus.Error("Unable to sign-in")) }
+                    return@launch
+                }
+                _profileViewState.update { it.copy(firebaseAuthStatus = AuthStatus.Success) }
+            } catch (e: NoGoogleAccountFoundException) {
+                _profileViewState.update { it.copy(firebaseAuthStatus = AuthStatus.NoGoogleAccount) }
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Sign in error", e)
+                _profileViewState.update { it.copy(firebaseAuthStatus = AuthStatus.Error("Sign in failed: ${e.localizedMessage}")) }
             }
-            _profileViewState.update { it.copy(firebaseAuthStatus = AuthStatus.Success) }
         }
     }
 

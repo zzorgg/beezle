@@ -57,6 +57,7 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
 
     Surface(
         modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background // ensure slides use app background
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
