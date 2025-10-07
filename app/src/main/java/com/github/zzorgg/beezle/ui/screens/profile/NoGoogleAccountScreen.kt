@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -22,8 +23,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun NoGoogleAccountScreen() {
     val context = LocalContext.current
-    // Load from res/raw to avoid asset path/case issues
-    val composition by rememberLottieComposition(LottieCompositionSpec.Asset("Sign.json.json"))
+    // Keep using the asset you referenced; it exists at app/src/main/assets/Sign.json
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset("Sign.json"))
     val viewModel: ProfileViewModel = hiltViewModel()
 
     AlertDialog(
@@ -34,11 +35,28 @@ fun NoGoogleAccountScreen() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                LottieAnimation(
-                    composition = composition,
-                    iterations = LottieConstants.IterateForever,
-                    modifier = Modifier.size(180.dp)
-                )
+                // Constrain and fit the Lottie to the dialog width with an upper bound
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    val maxAnimWidth = maxWidth * 0.8f
+                    val clampedWidth = if (maxAnimWidth > 220.dp) 220.dp else maxAnimWidth
+                    // If composition is loaded, preserve its aspect ratio; otherwise fallback square
+                    val aspect = composition?.let { comp ->
+                        val w = comp.bounds.width().toFloat().coerceAtLeast(1f)
+                        val h = comp.bounds.height().toFloat().coerceAtLeast(1f)
+                        (w / h).coerceIn(0.5f, 2.0f)
+                    } ?: 1f
+
+                    LottieAnimation(
+                        composition = composition,
+                        iterations = LottieConstants.IterateForever,
+                        modifier = Modifier
+                            .width(clampedWidth)
+                            .aspectRatio(aspect, matchHeightConstraintsFirst = true)
+                            .sizeIn(maxHeight = 220.dp)
+                            .clip(MaterialTheme.shapes.medium)
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = "No Google account found on this device. Add a Google account in Settings and try again.",
