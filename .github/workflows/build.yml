@@ -1,0 +1,57 @@
+name: Build
+
+# Refs:
+# https://medium.com/@vontonnie/automating-success-github-actions-workflow-for-android-app-deployment-908095d53b97
+# https://github.com/stardew-access/stardew-access/blob/development/.github/workflows/build.yml
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+  # Runs when this workflow is manually called
+  workflow_dispatch:
+
+  # Runs when this workflow is called by another workflow
+  workflow_call:
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Pull source code
+        uses: actions/checkout@v5
+
+      # Ref: https://github.com/actions/setup-java
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin' # See 'Supported distributions' for available options
+          java-version: '21'
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Setup Gradle Cache
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-home-cache-cleanup: true
+
+      - name: Generate google-services.json
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 --decode > app/google-services.json
+
+      - name: Build the debug apk
+        run: |
+          ./gradlew assembleDebug
+
+      # Ref: https://github.com/actions/upload-artifact
+      # Will only upload artifacts when manually called
+      - name: Upload apk as artifact
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-bundle
+          path: app/build/outputs/apk/debug/*.apk

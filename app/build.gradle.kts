@@ -62,11 +62,6 @@ android {
         buildConfig = true // Enable BuildConfig so WEBSOCKET_URL field is generated
     }
 }
-configurations.all {
-//    exclude(group = "com.google.protobuf", module = "protobuf-javalite")
-}
-
-
 
 dependencies {
     implementation(libs.androidx.core.ktx)
