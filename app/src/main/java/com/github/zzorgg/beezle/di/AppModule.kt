@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.github.zzorgg.beezle.data.local.LocalDataStoreRepository
 import com.github.zzorgg.beezle.data.remote.DuelWebSocketService
+import com.github.zzorgg.beezle.data.remote.FirebaseQuestionService
 import com.github.zzorgg.beezle.data.repository.AuthRepository
 import com.github.zzorgg.beezle.data.repository.DuelRepository
 import com.github.zzorgg.beezle.data.repository.FirebaseAuthRepository
@@ -14,6 +15,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.database.FirebaseDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -47,6 +49,19 @@ class AppModule {
 
     @Provides
     @Singleton
+    fun provideFirebaseDatabase(): FirebaseDatabase {
+        // Read FIREBASE_DATABASE_URL from BuildConfig if present; otherwise fall back to default
+        val url: String? = try {
+            val field = com.github.zzorgg.beezle.BuildConfig::class.java.getField("FIREBASE_DATABASE_URL")
+            (field.get(null) as? String)?.trim()?.trimEnd('/')
+        } catch (t: Throwable) {
+            null
+        }
+        return if (url.isNullOrBlank()) FirebaseDatabase.getInstance() else FirebaseDatabase.getInstance(url)
+    }
+
+    @Provides
+    @Singleton
     fun provideCredentialManager(
         @ApplicationContext context: Context
     ): CredentialManager = CredentialManager.create(context)
@@ -61,9 +76,10 @@ class AppModule {
     @Singleton
     fun provideDuelRepository(
         webSocketService: DuelWebSocketService,
-        authRepository: AuthRepository
+        authRepository: AuthRepository,
+        firebaseQuestionService: FirebaseQuestionService,
     ): DuelRepository {
-        return DuelRepository(webSocketService, authRepository)
+        return DuelRepository(webSocketService, authRepository, firebaseQuestionService)
     }
 
 

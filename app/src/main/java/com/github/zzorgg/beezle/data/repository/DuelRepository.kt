@@ -10,6 +10,8 @@ import com.github.zzorgg.beezle.data.model.duel.DuelUser
 import com.github.zzorgg.beezle.data.model.duel.Question
 import com.github.zzorgg.beezle.data.model.duel.WebSocketMessage
 import com.github.zzorgg.beezle.data.remote.DuelWebSocketService
+import com.github.zzorgg.beezle.data.remote.FirebaseQuestionService
+import com.github.zzorgg.beezle.data.remote.FirebaseMathQuestion
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,7 +28,8 @@ import kotlin.random.Random
 @Singleton
 class DuelRepository @Inject constructor(
     private val webSocketService: DuelWebSocketService,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val firebaseQuestionService: FirebaseQuestionService
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -41,18 +44,10 @@ class DuelRepository @Inject constructor(
     // Debounce join attempts to avoid spamming the server and duplicate queued responses
     private var lastJoinAttemptAt: Long = 0L
 
-    // Question bank for client-side question generation
-    private val mathQuestions = listOf(
-        Triple("15 + 27 = ?", listOf("40", "41", "42", "43"), 2),
-        Triple("8 × 9 = ?", listOf("64", "72", "81", "56"), 1),
-        Triple("100 - 37 = ?", listOf("63", "73", "67", "53"), 0),
-        Triple("144 ÷ 12 = ?", listOf("11", "12", "13", "14"), 1),
-        Triple("5² = ?", listOf("10", "15", "20", "25"), 3),
-        Triple("√64 = ?", listOf("6", "7", "8", "9"), 2),
-        Triple("25 × 4 = ?", listOf("90", "95", "100", "105"), 2),
-        Triple("3³ = ?", listOf("9", "18", "27", "36"), 2),
-    )
+    // Cache for Firebase questions
+    private var firebaseMathQuestions: List<FirebaseMathQuestion> = emptyList()
 
+    // Fallback CS questions (when mode is CS or GENERAL)
     private val csQuestions = listOf(
         Triple("Time complexity of binary search?", listOf("O(n)", "O(log n)", "O(n²)", "O(1)"), 1),
         Triple("FIFO data structure?", listOf("Stack", "Queue", "Tree", "Graph"), 1),
@@ -73,6 +68,7 @@ class DuelRepository @Inject constructor(
     init {
         observeWebSocketMessages()
         observeConnectionStatus()
+        loadFirebaseQuestions()
     }
 
     private fun observeConnectionStatus() {
@@ -255,12 +251,59 @@ class DuelRepository @Inject constructor(
 
     private fun generateQuestion(): Question {
         val mode = _duelState.value.selectedMode ?: DuelMode.MATH
-        val (text, options, correctIndex) = when (mode) {
-            DuelMode.MATH -> mathQuestions.random()
-            DuelMode.CS -> csQuestions.random()
-            DuelMode.GENERAL -> if (Random.nextBoolean()) mathQuestions.random() else csQuestions.random()
-        }
 
+        return when (mode) {
+            DuelMode.MATH -> generateMathQuestion()
+            DuelMode.CS -> generateCSQuestion()
+            DuelMode.GENERAL -> if (Random.nextBoolean()) generateMathQuestion() else generateCSQuestion()
+        }
+    }
+
+    private fun generateMathQuestion(): Question {
+        // Use Firebase questions if available, otherwise fallback
+        if (firebaseMathQuestions.isNotEmpty()) {
+            val firebaseQ = firebaseMathQuestions.random()
+
+            // Generate multiple choice options based on the correct answer
+            val correctAnswer = firebaseQ.answer
+            val options = generateMathOptions(correctAnswer)
+            val correctIndex = options.indexOf(correctAnswer.toString())
+
+            return Question(
+                id = "q_${currentMatchId}_$currentRound",
+                text = firebaseQ.question,
+                options = options,
+                correctAnswer = correctIndex,
+                timeLimit = QUESTION_TIME_LIMIT,
+                roundNumber = currentRound
+            )
+        } else {
+            // Fallback to hardcoded questions if Firebase is unavailable
+            Log.w(TAG, "Using fallback math questions")
+            val fallbackQuestions = listOf(
+                Triple("15 + 27 = ?", listOf("40", "41", "42", "43"), 2),
+                Triple("8 × 9 = ?", listOf("64", "72", "81", "56"), 1),
+                Triple("100 - 37 = ?", listOf("63", "73", "67", "53"), 0),
+                Triple("144 ÷ 12 = ?", listOf("11", "12", "13", "14"), 1),
+                Triple("5² = ?", listOf("10", "15", "20", "25"), 3),
+                Triple("√64 = ?", listOf("6", "7", "8", "9"), 2),
+                Triple("25 × 4 = ?", listOf("90", "95", "100", "105"), 2),
+                Triple("3³ = ?", listOf("9", "18", "27", "36"), 2),
+            )
+            val (text, options, correctIndex) = fallbackQuestions.random()
+            return Question(
+                id = "q_${currentMatchId}_$currentRound",
+                text = text,
+                options = options,
+                correctAnswer = correctIndex,
+                timeLimit = QUESTION_TIME_LIMIT,
+                roundNumber = currentRound
+            )
+        }
+    }
+
+    private fun generateCSQuestion(): Question {
+        val (text, options, correctIndex) = csQuestions.random()
         return Question(
             id = "q_${currentMatchId}_$currentRound",
             text = text,
@@ -269,6 +312,34 @@ class DuelRepository @Inject constructor(
             timeLimit = QUESTION_TIME_LIMIT,
             roundNumber = currentRound
         )
+    }
+
+    /**
+     * Generate 4 multiple choice options for a math answer
+     * One is correct, three are plausible distractors
+     */
+    private fun generateMathOptions(correctAnswer: Int): List<String> {
+        val options = mutableSetOf<Int>()
+        options.add(correctAnswer)
+
+        // Generate plausible wrong answers
+        val range = when {
+            correctAnswer < 10 -> 3
+            correctAnswer < 100 -> 10
+            else -> 20
+        }
+
+        while (options.size < 4) {
+            val offset = Random.nextInt(-range, range + 1)
+            if (offset != 0) {
+                val wrongAnswer = correctAnswer + offset
+                if (wrongAnswer > 0) {
+                    options.add(wrongAnswer)
+                }
+            }
+        }
+
+        return options.shuffled().map { it.toString() }
     }
 
     private var questionTimerJob: Job? = null
@@ -437,4 +508,16 @@ class DuelRepository @Inject constructor(
     }
 
     fun getCurrentUser() = currentUser
+
+    private fun loadFirebaseQuestions() {
+        scope.launch {
+            try {
+                firebaseMathQuestions = firebaseQuestionService.fetchMathQuestions()
+                Log.d(TAG, "✅ Loaded ${firebaseMathQuestions.size} math questions from Firebase")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Failed to load Firebase questions, will use fallback", e)
+                firebaseMathQuestions = emptyList()
+            }
+        }
+    }
 }

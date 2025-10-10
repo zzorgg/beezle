@@ -13,8 +13,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.SportsMartialArts
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
@@ -31,6 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -42,6 +46,7 @@ import coil.request.ImageRequest
 import com.airbnb.lottie.compose.*
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
+import com.github.zzorgg.beezle.ui.components.AppBottomBar
 import com.github.zzorgg.beezle.ui.components.BannerMedia
 import com.github.zzorgg.beezle.ui.components.BannerVideoPlayer
 import com.github.zzorgg.beezle.ui.components.MonochromeAsyncImage
@@ -194,85 +199,7 @@ fun MainAppScreen(
             )
         },
         bottomBar = {
-            // Floating pill-style bottom bar only on this screen
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp) // spacing from bottom edge
-            ) {
-                Card(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .clip(CircleShape),
-                    shape = CircleShape,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.95f)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .padding(horizontal = 28.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(36.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Duels
-                        Row(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .clickable { navigateToCallback("duels") }
-                                .padding(horizontal = 4.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.SportsMartialArts,
-                                contentDescription = "Duels",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text("Duels", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
-                        }
-                        // Profile
-                        Row(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .clickable { navigateToCallback("profile") }
-                                .padding(horizontal = 4.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Profile",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text("Profile", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
-                        }
-                        // Wallet / Connect
-                        Row(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .clickable { navigateToCallback("wallet") }
-                                .padding(horizontal = 4.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val walletTint = if (walletState.isConnected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
-                            Icon(
-                                imageVector = Icons.Default.AccountBalanceWallet,
-                                contentDescription = "Wallet",
-                                tint = walletTint,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                if (walletState.isConnected) "Wallet" else "Connect",
-                                color = if (walletState.isConnected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface,
-                                fontSize = 13.sp
-                            )
-                        }
-                    }
-                }
-            }
+            AppBottomBar(currentRoute = "main", onNavigate = navigateToCallback)
         }
     ) { innerPadding ->
         Column(

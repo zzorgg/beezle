@@ -102,6 +102,16 @@ class MainActivity : ComponentActivity() {
                         val cat = if (subject == "CS") Category.CS else Category.MATH
                         DuelsPracticeScreenRoot(navController = navController, initialCategory = cat)
                     }
+                    // New: default practice route for bottom bar
+                    composable("practice") {
+                        DuelsPracticeScreenRoot(navController = navController, initialCategory = Category.MATH)
+                    }
+                    // New: leaderboards route for bottom bar
+                    composable("leaderboards") {
+                        com.github.zzorgg.beezle.ui.screens.leaderboards.LeaderboardsScreen(
+                            onNavigate = { route -> navController.navigate(route) }
+                        )
+                    }
                     composable("wallet") {
                         WalletScreenRoot(
                             sender = sender,

@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -8,6 +11,15 @@ plugins {
     // Keep this at last (https://stackoverflow.com/questions/70550883/warning-the-following-options-were-not-recognized-by-any-processor-dagger-f)
     id("com.google.devtools.ksp")
     id("kotlin-kapt")
+}
+
+// Load secrets from local.properties
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { stream: FileInputStream ->
+        localProperties.load(stream)
+    }
 }
 
 android {
@@ -22,6 +34,11 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Add secrets as BuildConfig fields
+        buildConfigField("String", "FIREBASE_DATABASE_URL", "\"${localProperties.getProperty("FIREBASE_DATABASE_URL", "")}\"")
+        buildConfigField("String", "FIREBASE_API_KEY", "\"${localProperties.getProperty("FIREBASE_API_KEY", "")}\"")
+        buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${localProperties.getProperty("FIREBASE_PROJECT_ID", "")}\"")
     }
 
     buildTypes {
@@ -32,21 +49,21 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Updated to use your production WebSocket URL
+            // Read from local.properties
             buildConfigField(
                 "String",
                 "WEBSOCKET_URL",
-                "\"wss://octopus-app-4x8aa.ondigitalocean.app/ws\""
+                "\"${localProperties.getProperty("WEBSOCKET_URL", "wss://octopus-app-4x8aa.ondigitalocean.app/ws")}\""
             )
         }
         debug {
             isMinifyEnabled = false
             isShrinkResources = false
-            // Updated to use your production WebSocket URL for development as well
+            // Read from local.properties
             buildConfigField(
                 "String",
                 "WEBSOCKET_URL",
-                "\"wss://octopus-app-4x8aa.ondigitalocean.app/ws\""
+                "\"${localProperties.getProperty("WEBSOCKET_URL", "wss://octopus-app-4x8aa.ondigitalocean.app/ws")}\""
             )
         }
     }
@@ -130,6 +147,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-database") // Add Firebase Realtime Database
 
     // Also add the dependencies for the Credential Manager libraries and specify their versions
     implementation(libs.androidx.credentials)

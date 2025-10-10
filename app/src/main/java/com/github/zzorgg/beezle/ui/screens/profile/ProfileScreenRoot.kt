@@ -45,6 +45,7 @@ import kotlinx.coroutines.launch
 import android.content.ClipboardManager
 import android.content.ClipData
 import android.content.res.Configuration
+import com.github.zzorgg.beezle.ui.components.AppBottomBar
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -139,6 +140,7 @@ fun ProfileScreenRoot(navController: NavController, sender: ActivityResultSender
                     editing = !editing
                 },
                 navigateBackCallback = { navController.popBackStack() },
+                onNavigate = { route -> navController.navigate(route) },
             )
         }
         EphemeralGreenTick(
@@ -166,6 +168,7 @@ fun ProfileScreen(
     editUsernameCallback: (String) -> Unit,
     editUsernameButtonCallback: () -> Unit,
     navigateBackCallback: () -> Unit,
+    onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -187,6 +190,9 @@ fun ProfileScreen(
                 // Removed old sign-out action to move logout button to bottom per new design
                 actions = {}
             )
+        },
+        bottomBar = {
+            AppBottomBar(currentRoute = "profile", onNavigate = onNavigate)
         },
     ) { innerPadding ->
         Box(
@@ -648,7 +654,8 @@ private fun ProfileScreenPreview() {
             usernameInput = "",
             editUsernameCallback = {},
             editUsernameButtonCallback = {},
-            navigateBackCallback = {}
+            navigateBackCallback = {},
+            onNavigate = {}
         )
     }
 }
@@ -680,7 +687,8 @@ private fun ProfileScreenPreview_SignedIn() {
             usernameInput = "",
             editUsernameCallback = {},
             editUsernameButtonCallback = {},
-            navigateBackCallback = {}
+            navigateBackCallback = {},
+            onNavigate = {}
         )
     }
 }
