@@ -150,21 +150,7 @@ class SolanaWalletManager(application: Application) : AndroidViewModel(applicati
     private fun initializeWalletAdapter() {
         try {
             val beezleUri = "https://beezle.app".toUri()
-            val app = getApplication<Application>()
-            val res = app.resources
-            val iconResId = R.mipmap.main_icon_foreground
-            val iconUri = try {
-                val type = res.getResourceTypeName(iconResId)
-                val name = res.getResourceEntryName(iconResId)
-                // /<type>/<name>
-                "/$type/$name".toUri()
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to build android.resource icon URI, falling back to resource ID format", e)
-                // Fallback: use resource ID format which is also relative
-                "/${iconResId}".toUri()
-            }
-            Log.d(TAG, "Built icon URI: $iconUri (scheme: ${iconUri.scheme}, isAbsolute: ${iconUri.isAbsolute})")
-
+            val iconUri = "/logo.png".toUri()
             val identityName = "Beezle - Solana Dueling Game"
             walletAdapter = MobileWalletAdapter(
                 connectionIdentity = ConnectionIdentity(
