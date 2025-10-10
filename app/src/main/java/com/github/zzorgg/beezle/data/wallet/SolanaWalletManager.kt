@@ -149,7 +149,7 @@ class SolanaWalletManager(application: Application) : AndroidViewModel(applicati
 
     private fun initializeWalletAdapter() {
         try {
-            val solanaUri = "https://solana.com".toUri()
+            val beezleUri = "https://beezle.app".toUri()
             val app = getApplication<Application>()
             val res = app.resources
             val iconResId = R.mipmap.main_icon_foreground
@@ -168,7 +168,7 @@ class SolanaWalletManager(application: Application) : AndroidViewModel(applicati
             val identityName = "Beezle - Solana Dueling Game"
             walletAdapter = MobileWalletAdapter(
                 connectionIdentity = ConnectionIdentity(
-                    identityUri = solanaUri,
+                    identityUri = beezleUri,
                     iconUri = iconUri,
                     identityName = identityName
                 )
@@ -244,7 +244,7 @@ class SolanaWalletManager(application: Application) : AndroidViewModel(applicati
                 val result = walletAdapter.signIn(
                     sender,
                     SignInWithSolana.Payload(
-                        "solana.com",
+                        "beezle.app",
                         "Sign in to Beezle - Your Solana Dueling Game"
                     )
                 )
