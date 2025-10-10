@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import kotlinx.coroutines.launch
 import android.content.ClipboardManager
 import android.content.ClipData
+import android.content.res.Configuration
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -630,6 +631,7 @@ private fun WalletCard(
 }
 
 @Preview
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ProfileScreenPreview() {
     BeezleTheme {
@@ -652,6 +654,7 @@ private fun ProfileScreenPreview() {
 }
 
 @Preview
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ProfileScreenPreview_SignedIn() {
     BeezleTheme {
