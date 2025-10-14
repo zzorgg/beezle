@@ -28,24 +28,41 @@ jobs:
       # Ref: https://github.com/actions/setup-java
       - uses: actions/setup-java@v5
         with:
-          distribution: 'temurin' # See 'Supported distributions' for available options
+          distribution: 'oracle'
           java-version: '21'
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Setup Gradle Cache
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-home-cache-cleanup: true
+      # Ref: https://github.com/gradle/actions/blob/main/docs/setup-gradle.md
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Generate google-services.json
         run: |
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 --decode > app/google-services.json
 
-      - name: Build the debug apk
+      - name: Append API keys to local.properties
         run: |
-          ./gradlew assembleDebug
+          echo "" >> local.properties
+          echo "WEBSOCKET_URL=${{ secrets.WEBSOCKET_URL }}" >> local.properties
+
+      - name: Generate keystore.properties
+        run: |
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > signing_key.jks
+          echo "KEYSTORE_FILE=$(realpath signing_key.jks)" >> keystore.properties
+          echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> keystore.properties
+          echo "KEYSTORE_PASS=${{ secrets.KEYSTORE_PASS }}" >> keystore.properties
+          echo "KEY_PASS=${{ secrets.KEY_PASS }}" >> keystore.properties
+
+      - name: Build the debug apk
+        run: ./gradlew assembleDebug
+        continue-on-error: false
+
+      - name: Build the release apk
+        if: github.event_name == 'workflow_dispatch'
+        run: ./gradlew assembleRelease
+        continue-on-error: false
 
       # Ref: https://github.com/actions/upload-artifact
       # Will only upload artifacts when manually called
@@ -53,5 +70,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
-          name: artifacts-bundle
-          path: app/build/outputs/apk/debug/*.apk
+          name: apk-bundle
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
