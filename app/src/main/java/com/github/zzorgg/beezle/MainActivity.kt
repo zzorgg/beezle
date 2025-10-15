@@ -4,6 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -41,6 +47,28 @@ class MainActivity : ComponentActivity() {
                 NavHost(
                     navController = navController,
                     startDestination = "splash",
+                    enterTransition = {
+                        slideInHorizontally(
+                            animationSpec = spring(
+                                stiffness = Spring.StiffnessLow,
+                                dampingRatio = Spring.DampingRatioLowBouncy,
+                            )
+                        ) { it / 3 }
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(animationSpec = tween()) { -it }
+                    },
+                    popEnterTransition = {
+                        slideInHorizontally(
+                            animationSpec = spring(
+                                stiffness = Spring.StiffnessLow,
+                                dampingRatio = Spring.DampingRatioLowBouncy,
+                            )
+                        ) { -it / 3 }
+                    },
+                    popExitTransition = {
+                        slideOutHorizontally(animationSpec = tween()) { it }
+                    }
                 ) {
                     composable("splash") {
                         SplashScreen(onFinished = {
@@ -84,7 +112,8 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("duel/{mode}") { backStackEntry ->
-                        val modeStr = backStackEntry.arguments?.getString("mode")?.uppercase() ?: "MATH"
+                        val modeStr =
+                            backStackEntry.arguments?.getString("mode")?.uppercase() ?: "MATH"
                         val mode = when (modeStr) {
                             "CS" -> DuelMode.CS
                             "MATH" -> DuelMode.MATH
@@ -98,13 +127,20 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable("practice/{subject}") { backStackEntry ->
-                        val subject = backStackEntry.arguments?.getString("subject")?.uppercase() ?: "MATH"
+                        val subject =
+                            backStackEntry.arguments?.getString("subject")?.uppercase() ?: "MATH"
                         val cat = if (subject == "CS") Category.CS else Category.MATH
-                        DuelsPracticeScreenRoot(navController = navController, initialCategory = cat)
+                        DuelsPracticeScreenRoot(
+                            navController = navController,
+                            initialCategory = cat
+                        )
                     }
                     // New: default practice route for bottom bar
                     composable("practice") {
-                        DuelsPracticeScreenRoot(navController = navController, initialCategory = Category.MATH)
+                        DuelsPracticeScreenRoot(
+                            navController = navController,
+                            initialCategory = Category.MATH
+                        )
                     }
                     // New: leaderboards route for bottom bar
                     composable("leaderboards") {

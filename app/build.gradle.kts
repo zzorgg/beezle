@@ -1,5 +1,5 @@
-import java.util.Properties
 import java.io.FileInputStream
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -13,18 +13,51 @@ plugins {
     id("kotlin-kapt")
 }
 
-// Load secrets from local.properties
 val localProperties = Properties()
-val localPropertiesFile = rootProject.file("local.properties")
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.inputStream().use { stream: FileInputStream ->
-        localProperties.load(stream)
+val localPropertiesFile = File(rootDir, "local.properties")
+if (localPropertiesFile.exists() && localPropertiesFile.isFile) {
+    localPropertiesFile.inputStream().let {
+        localProperties.load(it)
     }
+} else {
+    throw IllegalStateException(
+        "Missing configuration file: 'local.properties'.\n"
+                + "Please create this file in the project root and define required keys.n"
+    )
 }
+
+val localPropertiesRequiredKeys = listOf("WEBSOCKET_URL")
+
+val missingKeys = localPropertiesRequiredKeys.filterNot { localProperties.containsKey(it) }
+if (missingKeys.isNotEmpty()) {
+    throw IllegalStateException(
+        "Missing required key(s) in local.properties: ${missingKeys.joinToString(", ")}"
+    )
+}
+
+// https://developer.android.com/studio/publish/app-signing#secure-shared-keystore
+var keystoreProperties: Properties? = null
+val keystorePropertiesFile = File(rootDir, "keystore.properties")
+if (keystorePropertiesFile.exists() && keystorePropertiesFile.isFile) {
+    keystoreProperties = Properties()
+    keystoreProperties?.load(FileInputStream(keystorePropertiesFile))
+}
+
 
 android {
     namespace = "com.github.zzorgg.beezle"
     compileSdk = 36
+
+    keystoreProperties?.let { keystore ->
+        signingConfigs {
+            create("beezle-config") {
+                keyAlias = keystore["KEY_ALIAS"] as String
+                keyPassword = keystore["KEY_PASS"] as String
+                storeFile = file(keystore["KEYSTORE_FILE"] as String)
+                storePassword = keystore["KEYSTORE_PASS"] as String
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.github.zzorgg.beezle"
@@ -34,11 +67,13 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // Add secrets as BuildConfig fields
-        buildConfigField("String", "FIREBASE_DATABASE_URL", "\"${localProperties.getProperty("FIREBASE_DATABASE_URL", "")}\"")
-        buildConfigField("String", "FIREBASE_API_KEY", "\"${localProperties.getProperty("FIREBASE_API_KEY", "")}\"")
-        buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${localProperties.getProperty("FIREBASE_PROJECT_ID", "")}\"")
+        localPropertiesRequiredKeys.onEach {
+            buildConfigField(
+                "String",
+                it,
+                "\"${localProperties[it] as String}\""
+            )
+        }
     }
 
     buildTypes {
@@ -49,22 +84,18 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Read from local.properties
-            buildConfigField(
-                "String",
-                "WEBSOCKET_URL",
-                "\"${localProperties.getProperty("WEBSOCKET_URL", "wss://octopus-app-4x8aa.ondigitalocean.app/ws")}\""
-            )
+            isDebuggable = false
+            if (keystoreProperties != null) {
+                signingConfig = signingConfigs["beezle-config"]
+            }
         }
         debug {
             isMinifyEnabled = false
             isShrinkResources = false
-            // Read from local.properties
-            buildConfigField(
-                "String",
-                "WEBSOCKET_URL",
-                "\"${localProperties.getProperty("WEBSOCKET_URL", "wss://octopus-app-4x8aa.ondigitalocean.app/ws")}\""
-            )
+            // Having this commonly in defaultConfig doesn't work for debug somehow
+            if (keystoreProperties != null) {
+                signingConfig = signingConfigs["beezle-config"]
+            }
         }
     }
     compileOptions {
@@ -147,7 +178,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
-    implementation("com.google.firebase:firebase-database") // Add Firebase Realtime Database
+    implementation("com.google.firebase:firebase-database")
 
     // Also add the dependencies for the Credential Manager libraries and specify their versions
     implementation(libs.androidx.credentials)

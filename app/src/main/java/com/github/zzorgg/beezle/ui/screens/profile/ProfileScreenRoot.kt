@@ -45,6 +45,8 @@ import kotlinx.coroutines.launch
 import android.content.ClipboardManager
 import android.content.ClipData
 import android.content.res.Configuration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import com.github.zzorgg.beezle.ui.components.AppBottomBar
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
@@ -171,6 +173,8 @@ fun ProfileScreen(
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val density = LocalDensity.current
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -191,9 +195,14 @@ fun ProfileScreen(
                 actions = {}
             )
         },
-        bottomBar = {
-            AppBottomBar(currentRoute = "profile", onNavigate = onNavigate)
-        },
+        floatingActionButton = { AppBottomBar(currentRoute = "profile", onNavigate = onNavigate) },
+        floatingActionButtonPosition = FabPosition.Center,
+        contentWindowInsets = WindowInsets(
+            top = WindowInsets.systemBars.getTop(density),
+            left = WindowInsets.systemBars.getLeft(density, LocalLayoutDirection.current),
+            right = WindowInsets.systemBars.getRight(density, LocalLayoutDirection.current),
+            bottom = WindowInsets.systemBars.getBottom(density) / 3
+        )
     ) { innerPadding ->
         Box(
             modifier = modifier

@@ -49,16 +49,7 @@ class AppModule {
 
     @Provides
     @Singleton
-    fun provideFirebaseDatabase(): FirebaseDatabase {
-        // Read FIREBASE_DATABASE_URL from BuildConfig if present; otherwise fall back to default
-        val url: String? = try {
-            val field = com.github.zzorgg.beezle.BuildConfig::class.java.getField("FIREBASE_DATABASE_URL")
-            (field.get(null) as? String)?.trim()?.trimEnd('/')
-        } catch (t: Throwable) {
-            null
-        }
-        return if (url.isNullOrBlank()) FirebaseDatabase.getInstance() else FirebaseDatabase.getInstance(url)
-    }
+    fun provideFirebaseDatabase(): FirebaseDatabase = FirebaseDatabase.getInstance()
 
     @Provides
     @Singleton

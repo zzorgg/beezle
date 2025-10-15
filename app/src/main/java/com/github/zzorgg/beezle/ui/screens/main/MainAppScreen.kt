@@ -2,39 +2,62 @@ package com.github.zzorgg.beezle.ui.screens.main
 
 import android.content.res.Configuration
 import android.os.Build
-import android.view.HapticFeedbackConstants
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.SportsMartialArts
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -43,7 +66,11 @@ import coil.compose.AsyncImage
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
-import com.airbnb.lottie.compose.*
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.github.zzorgg.beezle.R
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.AppBottomBar
@@ -52,9 +79,8 @@ import com.github.zzorgg.beezle.ui.components.BannerVideoPlayer
 import com.github.zzorgg.beezle.ui.components.MonochromeAsyncImage
 import com.github.zzorgg.beezle.ui.screens.profile.ProfileViewModel
 import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
-import com.google.firebase.auth.FirebaseAuth
-import com.github.zzorgg.beezle.R
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
+import com.google.firebase.auth.FirebaseAuth
 
 private enum class Subject { MATH, CS }
 
@@ -84,17 +110,13 @@ fun MainAppScreenRoot(
         BannerMedia.AssetGif(R.drawable.maths_banner),
         BannerMedia.AssetGif(R.drawable.cs_banner),
     )
-    val view = LocalView.current
 
     MainAppScreen(
         walletState = walletState,
         bannerItems = bannerItems,
         aggregatedLevel = aggregatedLevel,
         avatarUrl = FirebaseAuth.getInstance().currentUser?.photoUrl?.toString(),
-        navigateToCallback = {
-            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-            navController.navigate(it)
-        }
+        navigateToCallback = { navController.navigate(it) }
     )
 }
 
@@ -112,6 +134,8 @@ fun MainAppScreen(
     var selectedSubject by remember { mutableStateOf(Subject.MATH) }
     // Remove preferredWidth shrink; use full width banners like duel card
     val pagerState = rememberPagerState(pageCount = { bannerItems.size })
+
+    val density = LocalDensity.current
 
     Scaffold(
         topBar = {
@@ -173,7 +197,11 @@ fun MainAppScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text("Wallet", color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp)
+                            Text(
+                                "Wallet",
+                                color = MaterialTheme.colorScheme.tertiary,
+                                fontSize = 12.sp
+                            )
                         }
                     } else {
                         val chipBg = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
@@ -192,15 +220,24 @@ fun MainAppScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text("Connect", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
+                            Text(
+                                "Connect",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 12.sp
+                            )
                         }
                     }
                 }
             )
         },
-        bottomBar = {
-            AppBottomBar(currentRoute = "main", onNavigate = navigateToCallback)
-        }
+        floatingActionButton = { AppBottomBar( currentRoute = "main", onNavigate = navigateToCallback ) },
+        floatingActionButtonPosition = FabPosition.Center,
+        contentWindowInsets = WindowInsets(
+            top = WindowInsets.systemBars.getTop(density),
+            left = WindowInsets.systemBars.getLeft(density, LocalLayoutDirection.current),
+            right = WindowInsets.systemBars.getRight(density, LocalLayoutDirection.current),
+            bottom = WindowInsets.systemBars.getBottom(density) / 3
+        )
     ) { innerPadding ->
         Column(
             modifier = modifier
@@ -299,7 +336,8 @@ fun MainAppScreen(
             ) {
                 Subject.entries.forEach { subject ->
                     val selected = subject == selectedSubject
-                    val baseColor = if (subject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+                    val baseColor =
+                        if (subject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
                     val bgColor by animateColorAsState(
                         if (selected) baseColor.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceContainerLow,
                         label = "subjectBg"
@@ -358,33 +396,8 @@ fun MainAppScreen(
                             )
                         }
                         Spacer(modifier = Modifier.height(6.dp))
-                        Text("Real-time competitive play", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-                    }
-                }
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { navigateToCallback("practice/${selectedSubject.name.lowercase()}") },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-                ) {
-                    Column(Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = if (selectedSubject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                "${subjectLabels[selectedSubject]} Practice Mode",
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            "Single-player training & streaks",
+                            "Real-time competitive play",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 12.sp
                         )
