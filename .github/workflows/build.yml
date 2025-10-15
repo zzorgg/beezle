@@ -46,6 +46,7 @@ jobs:
         run: |
           echo "" >> local.properties
           echo "WEBSOCKET_URL=${{ secrets.WEBSOCKET_URL }}" >> local.properties
+          echo "BEEZLE_WEBPAGE_URL=${{ secrets.BEEZLE_WEBPAGE_URL }}" >> local.properties
 
       - name: Generate keystore.properties
         run: |

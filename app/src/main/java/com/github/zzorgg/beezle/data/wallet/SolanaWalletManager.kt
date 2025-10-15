@@ -3,20 +3,23 @@ package com.github.zzorgg.beezle.data.wallet
 import android.app.Application
 import android.content.Context
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.solana.mobilewalletadapter.clientlib.*
+import com.github.zzorgg.beezle.BuildConfig
+import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
+import com.solana.mobilewalletadapter.clientlib.ConnectionIdentity
+import com.solana.mobilewalletadapter.clientlib.MobileWalletAdapter
+import com.solana.mobilewalletadapter.clientlib.TransactionResult
 import com.solana.mobilewalletadapter.common.signin.SignInWithSolana
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import androidx.core.net.toUri
-import com.github.zzorgg.beezle.R
 
 // DataStore delegate at file level
 private val Context.walletDataStore by preferencesDataStore(name = "wallet_prefs")
@@ -149,7 +152,7 @@ class SolanaWalletManager(application: Application) : AndroidViewModel(applicati
 
     private fun initializeWalletAdapter() {
         try {
-            val beezleUri = "https://beezle.app".toUri()
+            val beezleUri = BuildConfig.BEEZLE_WEBPAGE_URL.toUri()
             val iconUri = "/logo.png".toUri()
             val identityName = "Beezle - Solana Dueling Game"
             walletAdapter = MobileWalletAdapter(

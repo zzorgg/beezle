@@ -26,7 +26,7 @@ if (localPropertiesFile.exists() && localPropertiesFile.isFile) {
     )
 }
 
-val localPropertiesRequiredKeys = listOf("WEBSOCKET_URL")
+val localPropertiesRequiredKeys = listOf("BEEZLE_WEBPAGE_URL", "WEBSOCKET_URL")
 
 val missingKeys = localPropertiesRequiredKeys.filterNot { localProperties.containsKey(it) }
 if (missingKeys.isNotEmpty()) {
