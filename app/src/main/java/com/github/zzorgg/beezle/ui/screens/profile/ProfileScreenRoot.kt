@@ -191,9 +191,8 @@ fun ProfileScreen(
                 actions = {}
             )
         },
-        bottomBar = {
-            AppBottomBar(currentRoute = "profile", onNavigate = onNavigate)
-        },
+        floatingActionButton = { AppBottomBar(currentRoute = "profile", onNavigate = onNavigate) },
+        floatingActionButtonPosition = FabPosition.Center,
     ) { innerPadding ->
         Box(
             modifier = modifier

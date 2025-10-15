@@ -22,9 +22,8 @@ fun LeaderboardsScreen(onNavigate: (String) -> Unit) {
                 )
             )
         },
-        bottomBar = {
-            AppBottomBar(currentRoute = "leaderboards", onNavigate = onNavigate)
-        }
+        floatingActionButton = { AppBottomBar(currentRoute = "leaderboards", onNavigate = onNavigate) },
+        floatingActionButtonPosition = FabPosition.Center,
     ) { innerPadding ->
         Surface(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             Column(

@@ -159,9 +159,8 @@ fun DuelsPracticeScreen(
                 }
             )
         },
-        bottomBar = {
-            AppBottomBar(currentRoute = "practice", onNavigate = onNavigate)
-        }
+        floatingActionButton = { AppBottomBar(currentRoute = "practice", onNavigate = onNavigate) },
+        floatingActionButtonPosition = FabPosition.Center,
     ) { innerPadding ->
         Column(
             modifier = modifier
