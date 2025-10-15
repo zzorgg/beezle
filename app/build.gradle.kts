@@ -178,6 +178,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-database")
 
     // Also add the dependencies for the Credential Manager libraries and specify their versions
     implementation(libs.androidx.credentials)
