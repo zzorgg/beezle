@@ -5,6 +5,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -13,6 +15,8 @@ import com.github.zzorgg.beezle.ui.components.AppBottomBar
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LeaderboardsScreen(onNavigate: (String) -> Unit) {
+    val density = LocalDensity.current
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -24,6 +28,12 @@ fun LeaderboardsScreen(onNavigate: (String) -> Unit) {
         },
         floatingActionButton = { AppBottomBar(currentRoute = "leaderboards", onNavigate = onNavigate) },
         floatingActionButtonPosition = FabPosition.Center,
+        contentWindowInsets = WindowInsets(
+            top = WindowInsets.systemBars.getTop(density),
+            left = WindowInsets.systemBars.getLeft(density, LocalLayoutDirection.current),
+            right = WindowInsets.systemBars.getRight(density, LocalLayoutDirection.current),
+            bottom = WindowInsets.systemBars.getBottom(density) / 3
+        )
     ) { innerPadding ->
         Surface(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             Column(

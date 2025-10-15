@@ -10,11 +10,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -48,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -130,6 +134,8 @@ fun MainAppScreen(
     var selectedSubject by remember { mutableStateOf(Subject.MATH) }
     // Remove preferredWidth shrink; use full width banners like duel card
     val pagerState = rememberPagerState(pageCount = { bannerItems.size })
+
+    val density = LocalDensity.current
 
     Scaffold(
         topBar = {
@@ -224,8 +230,14 @@ fun MainAppScreen(
                 }
             )
         },
-        floatingActionButton = { AppBottomBar(currentRoute = "main", onNavigate = navigateToCallback) },
+        floatingActionButton = { AppBottomBar( currentRoute = "main", onNavigate = navigateToCallback ) },
         floatingActionButtonPosition = FabPosition.Center,
+        contentWindowInsets = WindowInsets(
+            top = WindowInsets.systemBars.getTop(density),
+            left = WindowInsets.systemBars.getLeft(density, LocalLayoutDirection.current),
+            right = WindowInsets.systemBars.getRight(density, LocalLayoutDirection.current),
+            bottom = WindowInsets.systemBars.getBottom(density) / 3
+        )
     ) { innerPadding ->
         Column(
             modifier = modifier

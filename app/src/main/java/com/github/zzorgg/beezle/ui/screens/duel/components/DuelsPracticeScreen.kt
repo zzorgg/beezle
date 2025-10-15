@@ -12,6 +12,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -133,6 +135,8 @@ fun DuelsPracticeScreen(
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val density = LocalDensity.current
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -161,6 +165,12 @@ fun DuelsPracticeScreen(
         },
         floatingActionButton = { AppBottomBar(currentRoute = "practice", onNavigate = onNavigate) },
         floatingActionButtonPosition = FabPosition.Center,
+        contentWindowInsets = WindowInsets(
+            top = WindowInsets.systemBars.getTop(density),
+            left = WindowInsets.systemBars.getLeft(density, LocalLayoutDirection.current),
+            right = WindowInsets.systemBars.getRight(density, LocalLayoutDirection.current),
+            bottom = WindowInsets.systemBars.getBottom(density) / 3
+        )
     ) { innerPadding ->
         Column(
             modifier = modifier
