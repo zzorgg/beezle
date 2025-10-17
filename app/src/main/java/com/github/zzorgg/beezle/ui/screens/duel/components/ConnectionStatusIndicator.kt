@@ -9,12 +9,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.zzorgg.beezle.data.model.duel.ConnectionStatus
@@ -23,10 +23,10 @@ import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 
 @Composable
 fun ConnectionStatusIndicator(status: ConnectionStatus) {
-    val color = when (status) {
-        ConnectionStatus.CONNECTED -> Color.Green
-        ConnectionStatus.CONNECTING, ConnectionStatus.RECONNECTING -> Color.Yellow
-        ConnectionStatus.DISCONNECTED, ConnectionStatus.ERROR -> Color.Red
+    val dotColor = when (status) {
+        ConnectionStatus.CONNECTED -> MaterialTheme.colorScheme.tertiary
+        ConnectionStatus.CONNECTING, ConnectionStatus.RECONNECTING -> MaterialTheme.colorScheme.secondary
+        ConnectionStatus.DISCONNECTED, ConnectionStatus.ERROR -> MaterialTheme.colorScheme.error
     }
 
     val scale by animateFloatAsState(
@@ -34,7 +34,7 @@ fun ConnectionStatusIndicator(status: ConnectionStatus) {
         animationSpec = infiniteRepeatable(
             animation = tween(1000),
             repeatMode = RepeatMode.Reverse
-        ), label = ""
+        ), label = "statusPulse"
     )
 
     Box(
@@ -42,7 +42,7 @@ fun ConnectionStatusIndicator(status: ConnectionStatus) {
             .size(12.dp)
             .scale(scale)
             .clip(CircleShape)
-            .background(color)
+            .background(dotColor)
     )
 }
 

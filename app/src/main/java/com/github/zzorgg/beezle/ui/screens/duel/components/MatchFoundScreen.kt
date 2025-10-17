@@ -8,13 +8,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.zzorgg.beezle.data.model.duel.ConnectionStatus
@@ -23,60 +24,67 @@ import com.github.zzorgg.beezle.data.model.duel.DuelState
 import com.github.zzorgg.beezle.data.model.duel.DuelStatus
 import com.github.zzorgg.beezle.data.model.duel.DuelUser
 import com.github.zzorgg.beezle.data.model.duel.Question
-import com.github.zzorgg.beezle.ui.screens.duel.components.gameplay.PlayerCard
+import com.github.zzorgg.beezle.ui.screens.duel.components.gameplay.PlayerBadge
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 
-
 @Composable
-fun WaitingForQuestionScreen(duelState: DuelState) {
-    duelState.currentRoom?.let { room ->
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Text(
-                text = "Match Found!",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+fun MatchFoundScreen(duelState: DuelState) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+    ) {
+        Text(
+            text = "Match Found!",
+            style = MaterialTheme.typography.headlineLarge.copy(
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.tertiary
             )
+        )
 
-            Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
-            // Player vs Player UI
+        duelState.currentRoom?.let { room ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                PlayerCard(
-                    user = room.player1,
-                    isCurrentPlayer = true,
+                PlayerBadge(
+                    player = room.player1,
+                    score = duelState.myScore,
+                    isCurrentPlayer = true
                 )
 
                 Text(
                     text = "VS",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 )
 
-                PlayerCard(
-                    user = room.player2,
-                    isCurrentPlayer = false,
+                PlayerBadge(
+                    player = room.player2,
+                    score = duelState.opponentScore,
+                    isCurrentPlayer = false
                 )
             }
-
-            Spacer(modifier = Modifier.height(48.dp))
-
-            Text(
-                text = "Get Ready!",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                textAlign = TextAlign.Center
-            )
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Get ready...",
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
+
 }
 
 @Preview(showBackground = true)
@@ -84,7 +92,7 @@ fun WaitingForQuestionScreen(duelState: DuelState) {
 @Composable
 private fun WaitingForQuestionScreenPreview() {
     BeezleTheme {
-        WaitingForQuestionScreen(
+        MatchFoundScreen(
             DuelState(
                 isConnected = true,
                 isInQueue = false,
