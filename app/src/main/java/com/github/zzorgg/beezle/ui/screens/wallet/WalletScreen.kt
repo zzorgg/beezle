@@ -43,6 +43,7 @@ import androidx.navigation.NavController
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.EphemeralGreenTick
+import com.github.zzorgg.beezle.ui.navigation.Route
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 import java.util.Locale
@@ -80,8 +81,8 @@ fun WalletScreenRoot(
                     )
                 },
                 navigateBackCallback = {
-                    navController.navigate("main") {
-                        popUpTo("wallet") { inclusive = true }
+                    navController.navigate(Route.Home) {
+                        popUpTo(Route.Wallet) { inclusive = true }
                     }
                 },
                 modifier = modifier,

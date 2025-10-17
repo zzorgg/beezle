@@ -11,10 +11,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.zzorgg.beezle.ui.components.AppBottomBar
+import com.github.zzorgg.beezle.ui.navigation.Route
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LeaderboardsScreen(onNavigate: (String) -> Unit) {
+fun LeaderboardsScreen(onNavigate: (Route) -> Unit) {
     val density = LocalDensity.current
 
     Scaffold(
@@ -26,7 +27,7 @@ fun LeaderboardsScreen(onNavigate: (String) -> Unit) {
                 )
             )
         },
-        floatingActionButton = { AppBottomBar(currentRoute = "leaderboards", onNavigate = onNavigate) },
+        floatingActionButton = { AppBottomBar(currentRoute = Route.Leaderboard, onNavigate = onNavigate) },
         floatingActionButtonPosition = FabPosition.Center,
         contentWindowInsets = WindowInsets(
             top = WindowInsets.systemBars.getTop(density),

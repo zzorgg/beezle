@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.github.zzorgg.beezle.ui.components.AppBottomBar
+import com.github.zzorgg.beezle.ui.navigation.Route
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 import kotlin.random.Random
 
@@ -132,7 +133,7 @@ fun DuelsPracticeScreen(
     checkButtonCallback: () -> Unit,
     nextQuestionCallback: () -> Unit,
     navigateBackCallback: () -> Unit,
-    onNavigate: (String) -> Unit,
+    onNavigate: (Route) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
@@ -163,7 +164,7 @@ fun DuelsPracticeScreen(
                 }
             )
         },
-        floatingActionButton = { AppBottomBar(currentRoute = "practice", onNavigate = onNavigate) },
+        floatingActionButton = { AppBottomBar(currentRoute = Route.Practice, onNavigate = onNavigate) },
         floatingActionButtonPosition = FabPosition.Center,
         contentWindowInsets = WindowInsets(
             top = WindowInsets.systemBars.getTop(density),

@@ -27,14 +27,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import com.github.zzorgg.beezle.ui.navigation.Route
 
 @Composable
 private fun NavIcon(
-    route: String,
+    route: Route,
     icon: ImageVector,
     contentDesc: String,
-    currentRoute: String,
-    onNavigate: (String) -> Unit
+    currentRoute: Route,
+    onNavigate: (Route) -> Unit
 ) {
     val view = LocalView.current
     val isSelected = currentRoute == route
@@ -69,8 +70,8 @@ private fun NavIcon(
 
 @Composable
 fun AppBottomBar(
-    currentRoute: String,
-    onNavigate: (String) -> Unit,
+    currentRoute: Route,
+    onNavigate: (Route) -> Unit,
 ) {
     Card(
         modifier = Modifier.clip(CircleShape),
@@ -87,10 +88,10 @@ fun AppBottomBar(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            NavIcon("main", Icons.Default.Home, "Home", currentRoute, onNavigate)
-            NavIcon("profile", Icons.Default.Person, "Profile", currentRoute, onNavigate)
-            NavIcon("leaderboards", Icons.Default.EmojiEvents, "Leaderboards", currentRoute, onNavigate)
-            NavIcon("practice", Icons.Default.School, "Practice", currentRoute, onNavigate)
+            NavIcon(Route.Home, Icons.Default.Home, "Home", currentRoute, onNavigate)
+            NavIcon(Route.Profile, Icons.Default.Person, "Profile", currentRoute, onNavigate)
+            NavIcon(Route.Leaderboard, Icons.Default.EmojiEvents, "Leaderboards", currentRoute, onNavigate)
+            NavIcon(Route.Practice, Icons.Default.School, "Practice", currentRoute, onNavigate)
         }
     }
 }

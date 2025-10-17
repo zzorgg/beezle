@@ -48,6 +48,7 @@ import android.content.res.Configuration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import com.github.zzorgg.beezle.ui.components.AppBottomBar
+import com.github.zzorgg.beezle.ui.navigation.Route
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -170,7 +171,7 @@ fun ProfileScreen(
     editUsernameCallback: (String) -> Unit,
     editUsernameButtonCallback: () -> Unit,
     navigateBackCallback: () -> Unit,
-    onNavigate: (String) -> Unit,
+    onNavigate: (Route) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
@@ -195,7 +196,7 @@ fun ProfileScreen(
                 actions = {}
             )
         },
-        floatingActionButton = { AppBottomBar(currentRoute = "profile", onNavigate = onNavigate) },
+        floatingActionButton = { AppBottomBar(currentRoute = Route.Profile, onNavigate = onNavigate) },
         floatingActionButtonPosition = FabPosition.Center,
         contentWindowInsets = WindowInsets(
             top = WindowInsets.systemBars.getTop(density),

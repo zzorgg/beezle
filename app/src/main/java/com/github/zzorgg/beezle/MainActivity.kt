@@ -1,5 +1,6 @@
 package com.github.zzorgg.beezle
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,22 +10,24 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.github.zzorgg.beezle.data.model.duel.DuelMode
+import androidx.navigation.toRoute
+import com.github.zzorgg.beezle.ui.navigation.Route
 import com.github.zzorgg.beezle.ui.screens.duel.DuelScreen
-import com.github.zzorgg.beezle.ui.screens.duel.components.DuelsPracticeScreenRoot
 import com.github.zzorgg.beezle.ui.screens.duel.components.Category
+import com.github.zzorgg.beezle.ui.screens.duel.components.DuelsPracticeScreenRoot
+import com.github.zzorgg.beezle.ui.screens.leaderboards.LeaderboardsScreen
 import com.github.zzorgg.beezle.ui.screens.main.MainAppScreenRoot
 import com.github.zzorgg.beezle.ui.screens.onboarding.OnboardingScreen
 import com.github.zzorgg.beezle.ui.screens.onboarding.components.SplashScreen
-import com.github.zzorgg.beezle.ui.screens.profile.ProfileScreenRoot
 import com.github.zzorgg.beezle.ui.screens.onboarding.components.WalletOnboardingScreenRoot
+import com.github.zzorgg.beezle.ui.screens.profile.ProfileScreenRoot
 import com.github.zzorgg.beezle.ui.screens.wallet.WalletScreenRoot
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
@@ -34,6 +37,7 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private lateinit var sender: ActivityResultSender
 
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sender = ActivityResultSender(this)
@@ -46,7 +50,7 @@ class MainActivity : ComponentActivity() {
 
                 NavHost(
                     navController = navController,
-                    startDestination = "splash",
+                    startDestination = Route.Splash,
                     enterTransition = {
                         slideInHorizontally(
                             animationSpec = spring(
@@ -70,89 +74,79 @@ class MainActivity : ComponentActivity() {
                         slideOutHorizontally(animationSpec = tween()) { it }
                     }
                 ) {
-                    composable("splash") {
+                    composable<Route.Splash> {
                         SplashScreen(onFinished = {
                             val destination =
-                                if (localData.hasOnboarded) "main" else "onboarding"
+                                if (localData.hasOnboarded) Route.TopLevelRoutes else Route.Onboarding
                             navController.navigate(destination) {
-                                popUpTo("splash") { inclusive = true }
+                                popUpTo(Route.Splash) { inclusive = true }
                             }
                         })
                     }
-                    composable("onboarding") {
+                    composable<Route.Onboarding> {
                         OnboardingScreen(onGetStarted = {
-                            navController.navigate("wallet-onboarding") {
-                                popUpTo("onboarding") { inclusive = true }
+                            navController.navigate(Route.OnboardingWallet) {
+                                popUpTo(Route.Onboarding) { inclusive = true }
                             }
                             mainViewModel.finishOnBoarding()
                         })
                     }
-                    composable("wallet-onboarding") {
+                    composable<Route.OnboardingWallet> {
                         WalletOnboardingScreenRoot(
                             onWalletConnected = {
-                                navController.navigate("main") {
-                                    popUpTo("wallet-onboarding") { inclusive = true }
+                                navController.navigate(Route.TopLevelRoutes) {
+                                    popUpTo(Route.OnboardingWallet) { inclusive = true }
                                 }
                                 mainViewModel.connectedWallet()
                             },
                             sender = sender,
                         )
                     }
-                    composable("main") {
-                        MainAppScreenRoot(navController)
-                    }
-                    composable("profile") {
-                        ProfileScreenRoot(navController = navController, sender = sender)
-                    }
-                    composable("duels") {
-                        DuelScreen(
-                            onNavigateBack = {
-                                navController.popBackStack()
-                            }
-                        )
-                    }
-                    composable("duel/{mode}") { backStackEntry ->
-                        val modeStr =
-                            backStackEntry.arguments?.getString("mode")?.uppercase() ?: "MATH"
-                        val mode = when (modeStr) {
-                            "CS" -> DuelMode.CS
-                            "MATH" -> DuelMode.MATH
-                            else -> DuelMode.MATH
-                        }
+                    composable<Route.Duels> { backStackEntry ->
+                        val duelRoute = backStackEntry.toRoute<Route.Duels>()
                         DuelScreen(
                             onNavigateBack = {
                                 navController.popBackStack()
                             },
-                            initialMode = mode
+                            initialMode = duelRoute.initialMode
                         )
                     }
-                    composable("practice/{subject}") { backStackEntry ->
-                        val subject =
-                            backStackEntry.arguments?.getString("subject")?.uppercase() ?: "MATH"
-                        val cat = if (subject == "CS") Category.CS else Category.MATH
-                        DuelsPracticeScreenRoot(
-                            navController = navController,
-                            initialCategory = cat
-                        )
-                    }
-                    // New: default practice route for bottom bar
-                    composable("practice") {
-                        DuelsPracticeScreenRoot(
-                            navController = navController,
-                            initialCategory = Category.MATH
-                        )
-                    }
-                    // New: leaderboards route for bottom bar
-                    composable("leaderboards") {
-                        com.github.zzorgg.beezle.ui.screens.leaderboards.LeaderboardsScreen(
-                            onNavigate = { route -> navController.navigate(route) }
-                        )
-                    }
-                    composable("wallet") {
-                        WalletScreenRoot(
-                            sender = sender,
-                            navController = navController,
-                        )
+                    composable<Route.TopLevelRoutes> {
+                        Scaffold(
+
+                        ) {
+                            NavHost(
+                                navController = rememberNavController(),
+                                startDestination = Route.Home
+                            ) {
+                                composable<Route.Home> {
+                                    MainAppScreenRoot(navController)
+                                }
+                                composable<Route.Profile> {
+                                    ProfileScreenRoot(
+                                        navController = navController,
+                                        sender = sender
+                                    )
+                                }
+                                composable<Route.Practice> {
+                                    DuelsPracticeScreenRoot(
+                                        navController = navController,
+                                        initialCategory = Category.MATH
+                                    )
+                                }
+                                composable<Route.Leaderboard> {
+                                    LeaderboardsScreen(
+                                        onNavigate = { route -> navController.navigate(route) }
+                                    )
+                                }
+                                composable<Route.Wallet> {
+                                    WalletScreenRoot(
+                                        sender = sender,
+                                        navController = navController,
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

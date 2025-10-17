@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
@@ -71,12 +70,14 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.github.zzorgg.beezle.R
+import com.github.zzorgg.beezle.data.model.duel.DuelMode
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.AppBottomBar
 import com.github.zzorgg.beezle.ui.components.BannerMedia
 import com.github.zzorgg.beezle.ui.components.BannerVideoPlayer
 import com.github.zzorgg.beezle.ui.components.MonochromeAsyncImage
+import com.github.zzorgg.beezle.ui.navigation.Route
 import com.github.zzorgg.beezle.ui.screens.profile.ProfileViewModel
 import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
@@ -127,7 +128,7 @@ fun MainAppScreen(
     bannerItems: List<BannerMedia>,
     aggregatedLevel: Int?,
     avatarUrl: String?,
-    navigateToCallback: (String) -> Unit,
+    navigateToCallback: (Route) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val subjectLabels = mapOf(Subject.MATH to "Math", Subject.CS to "CS")
@@ -157,7 +158,7 @@ fun MainAppScreen(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .clip(CircleShape)
-                                    .clickable { navigateToCallback("profile") }
+                                    .clickable { navigateToCallback(Route.Profile) }
                             )
                         } else {
                             val chipBg = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
@@ -169,7 +170,7 @@ fun MainAppScreen(
                                     .size(40.dp)
                                     .clip(CircleShape)
                                     .background(chipBg)
-                                    .clickable { navigateToCallback("profile") }
+                                    .clickable { navigateToCallback(Route.Profile) }
                                     .padding(8.dp)
                             )
                         }
@@ -186,7 +187,7 @@ fun MainAppScreen(
                             modifier = Modifier
                                 .clip(CircleShape)
                                 .background(chipBg)
-                                .clickable { navigateToCallback("wallet") }
+                                .clickable { navigateToCallback(Route.Wallet) }
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -209,7 +210,7 @@ fun MainAppScreen(
                             modifier = Modifier
                                 .clip(CircleShape)
                                 .background(chipBg)
-                                .clickable { navigateToCallback("wallet") }
+                                .clickable { navigateToCallback(Route.Wallet) }
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -230,7 +231,7 @@ fun MainAppScreen(
                 }
             )
         },
-        floatingActionButton = { AppBottomBar( currentRoute = "main", onNavigate = navigateToCallback ) },
+        floatingActionButton = { AppBottomBar( currentRoute = Route.Home, onNavigate = navigateToCallback ) },
         floatingActionButtonPosition = FabPosition.Center,
         contentWindowInsets = WindowInsets(
             top = WindowInsets.systemBars.getTop(density),
@@ -375,8 +376,8 @@ fun MainAppScreen(
                         .fillMaxWidth()
                         .clickable {
                             // Navigate to duel screen with selected mode
-                            val mode = if (selectedSubject == Subject.MATH) "math" else "cs"
-                            navigateToCallback("duel/$mode")
+                            val mode = if (selectedSubject == Subject.MATH) DuelMode.MATH else DuelMode.CS
+                            navigateToCallback(Route.Duels(mode))
                         },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                 ) {
