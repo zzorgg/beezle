@@ -2,6 +2,7 @@ package com.github.zzorgg.beezle
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.view.HapticFeedbackConstants
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -10,14 +11,24 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.github.zzorgg.beezle.ui.navigation.NAVBAR_ROUTES
 import com.github.zzorgg.beezle.ui.navigation.Route
 import com.github.zzorgg.beezle.ui.screens.duel.DuelScreen
 import com.github.zzorgg.beezle.ui.screens.duel.components.Category
@@ -45,6 +56,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             BeezleTheme {
                 val navController = rememberNavController()
+                val topLevelNavController = rememberNavController()
                 val mainViewModel: MainViewModel = viewModel()
                 val localData by mainViewModel.localData.collectAsState()
 
@@ -113,14 +125,67 @@ class MainActivity : ComponentActivity() {
                     }
                     composable<Route.TopLevelRoutes> {
                         Scaffold(
-
+                            bottomBar = {
+                                val navBackStackEntry =
+                                    topLevelNavController.currentBackStackEntryAsState().value
+                                val currentDestination = navBackStackEntry?.destination
+                                val view = LocalView.current
+                                NavigationBar {
+                                    NAVBAR_ROUTES.forEach { item ->
+                                        NavigationBarItem(
+                                            selected = currentDestination?.hierarchy?.any {
+                                                it.hasRoute(item.first::class)
+                                            } == true,
+                                            onClick = {
+                                                topLevelNavController.navigate(item.first)
+                                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                            },
+                                            icon = { Icon(item.second, item.third) },
+                                            colors = NavigationBarItemDefaults.colors(
+                                                indicatorColor = MaterialTheme.colorScheme.primary.copy(
+                                                    alpha = 0.58f
+                                                )
+                                            )
+                                        )
+                                    }
+                                }
+                            }
                         ) {
                             NavHost(
-                                navController = rememberNavController(),
-                                startDestination = Route.Home
+                                navController = topLevelNavController,
+                                startDestination = Route.Home,
+                                enterTransition = {
+                                    slideInHorizontally(
+                                        animationSpec = spring(
+                                            stiffness = Spring.StiffnessLow,
+                                            dampingRatio = Spring.DampingRatioLowBouncy,
+                                        )
+                                    ) { it / 3 }
+                                },
+                                exitTransition = {
+                                    slideOutHorizontally(animationSpec = tween()) { -it }
+                                },
+                                popEnterTransition = {
+                                    slideInHorizontally(
+                                        animationSpec = spring(
+                                            stiffness = Spring.StiffnessLow,
+                                            dampingRatio = Spring.DampingRatioLowBouncy,
+                                        )
+                                    ) { -it / 3 }
+                                },
+                                popExitTransition = {
+                                    slideOutHorizontally(animationSpec = tween()) { it }
+                                }
                             ) {
                                 composable<Route.Home> {
-                                    MainAppScreenRoot(navController)
+                                    MainAppScreenRoot(
+                                        navigateToRootCallback = { navController.navigate(it) },
+                                        navigateToTopLevelCallback = {
+                                            topLevelNavController.navigate(
+                                                it
+                                            )
+                                        }
+                                    )
                                 }
                                 composable<Route.Profile> {
                                     ProfileScreenRoot(
@@ -136,7 +201,6 @@ class MainActivity : ComponentActivity() {
                                 }
                                 composable<Route.Leaderboard> {
                                     LeaderboardsScreen(
-                                        onNavigate = { route -> navController.navigate(route) }
                                     )
                                 }
                                 composable<Route.Wallet> {

@@ -10,13 +10,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -29,7 +27,6 @@ import androidx.compose.material.icons.filled.SportsMartialArts
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -39,6 +36,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,7 +48,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -60,7 +57,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
@@ -73,7 +69,6 @@ import com.github.zzorgg.beezle.R
 import com.github.zzorgg.beezle.data.model.duel.DuelMode
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
-import com.github.zzorgg.beezle.ui.components.AppBottomBar
 import com.github.zzorgg.beezle.ui.components.BannerMedia
 import com.github.zzorgg.beezle.ui.components.BannerVideoPlayer
 import com.github.zzorgg.beezle.ui.components.MonochromeAsyncImage
@@ -88,7 +83,8 @@ private enum class Subject { MATH, CS }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainAppScreenRoot(
-    navController: NavController,
+    navigateToRootCallback: (Route) -> Unit,
+    navigateToTopLevelCallback: (Route) -> Unit,
 ) {
     val walletManager: SolanaWalletManager = viewModel()
     val walletState by walletManager.walletState.collectAsState()
@@ -98,7 +94,7 @@ fun MainAppScreenRoot(
     val profileDataState by profileViewModel.profileDataState.collectAsStateWithLifecycle()
 
     // Refresh when wallet public key or auth status changes
-    androidx.compose.runtime.LaunchedEffect(
+    LaunchedEffect(
         walletState.publicKey,
         profileViewState.firebaseAuthStatus
     ) {
@@ -117,7 +113,8 @@ fun MainAppScreenRoot(
         bannerItems = bannerItems,
         aggregatedLevel = aggregatedLevel,
         avatarUrl = FirebaseAuth.getInstance().currentUser?.photoUrl?.toString(),
-        navigateToCallback = { navController.navigate(it) }
+        navigateToRootCallback = navigateToRootCallback,
+        navigateToTopLevelCallback = navigateToTopLevelCallback,
     )
 }
 
@@ -128,15 +125,14 @@ fun MainAppScreen(
     bannerItems: List<BannerMedia>,
     aggregatedLevel: Int?,
     avatarUrl: String?,
-    navigateToCallback: (Route) -> Unit,
+    navigateToRootCallback: (Route) -> Unit,
+    navigateToTopLevelCallback: (Route) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val subjectLabels = mapOf(Subject.MATH to "Math", Subject.CS to "CS")
     var selectedSubject by remember { mutableStateOf(Subject.MATH) }
     // Remove preferredWidth shrink; use full width banners like duel card
     val pagerState = rememberPagerState(pageCount = { bannerItems.size })
-
-    val density = LocalDensity.current
 
     Scaffold(
         topBar = {
@@ -158,7 +154,7 @@ fun MainAppScreen(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .clip(CircleShape)
-                                    .clickable { navigateToCallback(Route.Profile) }
+                                    .clickable { navigateToTopLevelCallback(Route.Profile) }
                             )
                         } else {
                             val chipBg = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
@@ -170,7 +166,7 @@ fun MainAppScreen(
                                     .size(40.dp)
                                     .clip(CircleShape)
                                     .background(chipBg)
-                                    .clickable { navigateToCallback(Route.Profile) }
+                                    .clickable { navigateToTopLevelCallback(Route.Profile) }
                                     .padding(8.dp)
                             )
                         }
@@ -187,7 +183,7 @@ fun MainAppScreen(
                             modifier = Modifier
                                 .clip(CircleShape)
                                 .background(chipBg)
-                                .clickable { navigateToCallback(Route.Wallet) }
+                                .clickable { navigateToTopLevelCallback(Route.Wallet) }
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -210,7 +206,7 @@ fun MainAppScreen(
                             modifier = Modifier
                                 .clip(CircleShape)
                                 .background(chipBg)
-                                .clickable { navigateToCallback(Route.Wallet) }
+                                .clickable { navigateToTopLevelCallback(Route.Wallet) }
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -231,14 +227,6 @@ fun MainAppScreen(
                 }
             )
         },
-        floatingActionButton = { AppBottomBar( currentRoute = Route.Home, onNavigate = navigateToCallback ) },
-        floatingActionButtonPosition = FabPosition.Center,
-        contentWindowInsets = WindowInsets(
-            top = WindowInsets.systemBars.getTop(density),
-            left = WindowInsets.systemBars.getLeft(density, LocalLayoutDirection.current),
-            right = WindowInsets.systemBars.getRight(density, LocalLayoutDirection.current),
-            bottom = WindowInsets.systemBars.getBottom(density) / 3
-        )
     ) { innerPadding ->
         Column(
             modifier = modifier
@@ -376,8 +364,9 @@ fun MainAppScreen(
                         .fillMaxWidth()
                         .clickable {
                             // Navigate to duel screen with selected mode
-                            val mode = if (selectedSubject == Subject.MATH) DuelMode.MATH else DuelMode.CS
-                            navigateToCallback(Route.Duels(mode))
+                            val mode =
+                                if (selectedSubject == Subject.MATH) DuelMode.MATH else DuelMode.CS
+                            navigateToRootCallback(Route.Duels(mode))
                         },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                 ) {
@@ -424,7 +413,8 @@ fun MainAppScreenPreview() {
             ),
             aggregatedLevel = 2,
             avatarUrl = null,
-            navigateToCallback = {},
+            navigateToRootCallback = { },
+            navigateToTopLevelCallback = {},
         )
     }
 }
