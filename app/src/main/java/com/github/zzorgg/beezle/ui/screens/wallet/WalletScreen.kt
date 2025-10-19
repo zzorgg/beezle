@@ -39,11 +39,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.EphemeralGreenTick
-import com.github.zzorgg.beezle.ui.navigation.Route
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 import java.util.Locale
@@ -51,7 +49,7 @@ import java.util.Locale
 @Composable
 fun WalletScreenRoot(
     sender: ActivityResultSender,
-    navController: NavController,
+    navigateBackCallback: () -> Unit,
     modifier: Modifier = Modifier,
     walletManager: SolanaWalletManager = viewModel(),
 ) {
@@ -80,11 +78,7 @@ fun WalletScreenRoot(
                         "Hello from Beezle! Testing message signing."
                     )
                 },
-                navigateBackCallback = {
-                    navController.navigate(Route.Home) {
-                        popUpTo(Route.Wallet) { inclusive = true }
-                    }
-                },
+                navigateBackCallback = navigateBackCallback,
                 modifier = modifier,
             )
         }

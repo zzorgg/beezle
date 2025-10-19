@@ -63,7 +63,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.github.zzorgg.beezle.data.model.profile.UserProfile
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
@@ -80,7 +79,10 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreenRoot(navController: NavController, sender: ActivityResultSender) {
+fun ProfileScreenRoot(
+    sender: ActivityResultSender,
+    navigateBackCallback: () -> Unit,
+) {
     val context = LocalContext.current
     val activity = context as? Activity
 
@@ -169,7 +171,7 @@ fun ProfileScreenRoot(navController: NavController, sender: ActivityResultSender
                     }
                     editing = !editing
                 },
-                navigateBackCallback = { navController.popBackStack() },
+                navigateBackCallback = navigateBackCallback,
             )
         }
         EphemeralGreenTick(

@@ -43,7 +43,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 import kotlin.random.Random
 
@@ -95,8 +94,8 @@ private fun generateCsQuestion(): Question {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DuelsPracticeScreenRoot(
-    navController: NavController,
-    initialCategory: Category = Category.MATH
+    initialCategory: Category = Category.MATH,
+    navigateBackCallback: () -> Unit,
 ) {
     var level by remember { mutableIntStateOf(1) }
     var current by remember { mutableStateOf<Question?>(null) }
@@ -138,7 +137,7 @@ fun DuelsPracticeScreenRoot(
             }
         },
         nextQuestionCallback = { nextQuestion() },
-        navigateBackCallback = { navController.popBackStack() }
+        navigateBackCallback = navigateBackCallback,
     )
 }
 
