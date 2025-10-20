@@ -63,16 +63,19 @@ import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.github.zzorgg.beezle.R
+import com.github.zzorgg.beezle.data.preferences.WelcomePreferences
 import com.github.zzorgg.beezle.data.model.duel.DuelMode
+import com.github.zzorgg.beezle.data.model.profile.UserProfile
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.BannerMedia
 import com.github.zzorgg.beezle.ui.components.BannerVideoPlayer
 import com.github.zzorgg.beezle.ui.components.MonochromeAsyncImage
 import com.github.zzorgg.beezle.ui.navigation.Route
+import com.github.zzorgg.beezle.ui.screens.main.components.ProfileStatsCard
 import com.github.zzorgg.beezle.ui.screens.profile.ProfileViewModel
 import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
@@ -85,6 +88,12 @@ private enum class Subject { MATH, CS }
 fun MainAppScreenRoot(
     navigateToRootCallback: (Route) -> Unit,
     navigateToTopLevelCallback: (Route) -> Unit,
+    welcomePreferences: WelcomePreferences = hiltViewModel<ProfileViewModel>().run {
+        // Access via DI, using a workaround since we can't inject directly into @Composable
+        LocalContext.current.let { context ->
+            remember { WelcomePreferences(context) }
+        }
+    }
 ) {
     val walletManager: SolanaWalletManager = viewModel()
     val walletState by walletManager.walletState.collectAsState()
@@ -92,6 +101,9 @@ fun MainAppScreenRoot(
     val profileViewModel: ProfileViewModel = hiltViewModel()
     val profileViewState by profileViewModel.profileViewState.collectAsStateWithLifecycle()
     val profileDataState by profileViewModel.profileDataState.collectAsStateWithLifecycle()
+
+    // Track if welcome animation has been shown this session
+    var showWelcomeAnimation by remember { mutableStateOf(!welcomePreferences.hasShownWelcomeAnimation()) }
 
     // Refresh when wallet public key or auth status changes
     LaunchedEffect(
@@ -113,6 +125,12 @@ fun MainAppScreenRoot(
         bannerItems = bannerItems,
         aggregatedLevel = aggregatedLevel,
         avatarUrl = FirebaseAuth.getInstance().currentUser?.photoUrl?.toString(),
+        userProfile = profileDataState.userProfile,
+        showWelcomeAnimation = showWelcomeAnimation,
+        onWelcomeAnimationComplete = {
+            welcomePreferences.markWelcomeAnimationShown()
+            showWelcomeAnimation = false
+        },
         navigateToRootCallback = navigateToRootCallback,
         navigateToTopLevelCallback = navigateToTopLevelCallback,
     )
@@ -125,6 +143,9 @@ fun MainAppScreen(
     bannerItems: List<BannerMedia>,
     aggregatedLevel: Int?,
     avatarUrl: String?,
+    userProfile: UserProfile?,
+    showWelcomeAnimation: Boolean,
+    onWelcomeAnimationComplete: () -> Unit,
     navigateToRootCallback: (Route) -> Unit,
     navigateToTopLevelCallback: (Route) -> Unit,
     modifier: Modifier = Modifier
@@ -303,16 +324,38 @@ fun MainAppScreen(
                 }
             }
 
-            // Simple Lottie animation (XO7TbUiuBv.json) without glow effect
-            val duelBannerComposition by rememberLottieComposition(LottieCompositionSpec.Asset("XO7TbUiuBv.json"))
-            LottieAnimation(
-                composition = duelBannerComposition,
-                iterations = LottieConstants.IterateForever,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp)
-                    .padding(vertical = 8.dp)
-            )
+            // Welcome animation or Profile card
+            if (showWelcomeAnimation) {
+                val duelBannerComposition by rememberLottieComposition(LottieCompositionSpec.Asset("XO7TbUiuBv.json"))
+                val progress by animateLottieCompositionAsState(
+                    composition = duelBannerComposition,
+                    iterations = 1
+                )
+
+                LottieAnimation(
+                    composition = duelBannerComposition,
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp)
+                        .padding(vertical = 8.dp)
+                )
+
+                // Mark animation complete when it finishes
+                LaunchedEffect(progress) {
+                    if (progress >= 1f && duelBannerComposition != null) {
+                        onWelcomeAnimationComplete()
+                    }
+                }
+            } else {
+                // Show profile card after animation completes
+                ProfileStatsCard(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    userProfile = userProfile,
+                    avatarUrl = avatarUrl,
+                    beezleCoins = 0 // TODO: Implement in-app currency
+                )
+            }
 
             Spacer(Modifier.height(8.dp))
 
@@ -413,6 +456,9 @@ fun MainAppScreenPreview() {
             ),
             aggregatedLevel = 2,
             avatarUrl = null,
+            userProfile = null,
+            showWelcomeAnimation = false,
+            onWelcomeAnimationComplete = {},
             navigateToRootCallback = { },
             navigateToTopLevelCallback = {},
         )
