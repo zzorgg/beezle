@@ -7,8 +7,13 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +24,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -52,40 +59,65 @@ fun TopLevelNavHost(
             val navBackStackEntry = topLevelNavController.currentBackStackEntryAsState().value
             val currentDestination = navBackStackEntry?.destination
             val view = LocalView.current
-            NavigationBar(
+            val chipBg = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+
+            Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .offset(y = 2.dp)
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(start = 8.dp, end = 8.dp, bottom = 16.dp)
             ) {
-                NAVBAR_ROUTES.forEach { item ->
-                    val isSelected = currentDestination?.hierarchy?.any {
-                        it.hasRoute(item.first::class)
-                    } == true
-                    NavigationBarItem(
-                        selected = isSelected,
-                        onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                            if (isSelected) return@NavigationBarItem
-                            topLevelNavController.navigate(item.first) {
-                                // Pop up to the start destination of the graph to
-                                // avoid building up a large stack of destinations
-                                // on the back stack as users select items
-                                popUpTo(topLevelNavController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                // Avoid multiple copies of the same destination when
-                                // reselecting the same item
-                                launchSingleTop = true
-                                // Restore state when reselecting a previously selected item
-                                restoreState = true
-                            }
-                        },
-                        icon = { Icon(item.second, item.third) },
-                        colors = NavigationBarItemDefaults.colors(
-                            indicatorColor = MaterialTheme.colorScheme.primary.copy( alpha = 0.58f )
+                NavigationBar(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp)
+                        .shadow(
+                            elevation = 24.dp,
+                            shape = RoundedCornerShape(28.dp),
+                            ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                            spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                         )
-                    )
+                        .clip(RoundedCornerShape(28.dp))
+                        .border(
+                            width = 1.5.dp,
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                                    MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.05f)
+                                )
+                            ),
+                            shape = RoundedCornerShape(28.dp)
+                        ),
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    windowInsets = WindowInsets(0, 0, 0, 0),
+                    tonalElevation = 3.dp
+                ) {
+                    NAVBAR_ROUTES.forEach { item ->
+                        val isSelected = currentDestination?.hierarchy?.any {
+                            it.hasRoute(item.first::class)
+                        } == true
+                        NavigationBarItem(
+                            selected = isSelected,
+                            onClick = {
+                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                if (isSelected) return@NavigationBarItem
+                                topLevelNavController.navigate(item.first) {
+                                    popUpTo(topLevelNavController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = { Icon(item.second, item.third) },
+                            alwaysShowLabel = false,
+                            colors = NavigationBarItemDefaults.colors(
+                                indicatorColor = chipBg,
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        )
+                    }
                 }
             }
         }
