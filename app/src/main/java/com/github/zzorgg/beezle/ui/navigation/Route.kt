@@ -32,9 +32,6 @@ sealed interface Route {
     data object Profile : Route
 
     @Serializable
-    data object Wallet : Route
-
-    @Serializable
     data object Leaderboard : Route
 
     @Serializable

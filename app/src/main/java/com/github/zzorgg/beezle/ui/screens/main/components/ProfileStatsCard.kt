@@ -1,5 +1,6 @@
 package com.github.zzorgg.beezle.ui.screens.main.components
 
+import android.content.res.Configuration
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -132,7 +133,8 @@ private fun StatItem(
     }
 }
 
-@Preview
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ProfileStatsCardPreview() {
     BeezleTheme {

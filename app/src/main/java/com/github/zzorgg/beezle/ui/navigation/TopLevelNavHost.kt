@@ -40,7 +40,6 @@ import com.github.zzorgg.beezle.ui.screens.duel.components.DuelsPracticeScreenRo
 import com.github.zzorgg.beezle.ui.screens.leaderboards.LeaderboardsScreen
 import com.github.zzorgg.beezle.ui.screens.main.MainAppScreenRoot
 import com.github.zzorgg.beezle.ui.screens.profile.ProfileScreenRoot
-import com.github.zzorgg.beezle.ui.screens.wallet.WalletScreenRoot
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -168,12 +167,6 @@ fun TopLevelNavHost(
             }
             composable<Route.Leaderboard> {
                 LeaderboardsScreen()
-            }
-            composable<Route.Wallet> {
-                WalletScreenRoot(
-                    sender = sender,
-                    navigateBackCallback = navigateBackCallback,
-                )
             }
         }
     }
