@@ -1,17 +1,20 @@
 package com.github.zzorgg.beezle.ui.screens.main.components
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CurrencyBitcoin
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -21,16 +24,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.github.zzorgg.beezle.data.model.profile.UserProfile
-import com.github.zzorgg.beezle.ui.components.PlayerAvatarIcon
-import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 import java.util.Locale
 
@@ -43,44 +42,30 @@ fun ProfileStatsCard(
     val aggregatedLevel = userProfile?.let { (it.mathLevel + it.csLevel) / 2 }
 
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-        colors = CardDefaults.cardColors( containerColor = MaterialTheme.colorScheme.surfaceContainerLow )
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+        Column(
+            modifier = Modifier.padding(8.dp)
         ) {
-            // Left side: Avatar and username
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                PlayerAvatarIcon(
-                    model = userProfile?.avatarUrl,
-                    fallbackUsername = userProfile?.username ?: "Player",
-                    fallbackTextColor = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                )
-                Spacer(Modifier.width(8.dp))
-                LevelBadge("Level $aggregatedLevel", fontSize = 14.sp)
-            }
-
-            // Right side: Stats
-            Column(
-                horizontalAlignment = Alignment.End
+            Text(
+                "Statistics",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.W500,
+            )
+            Spacer(Modifier.height(8.dp))
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 StatItem(
                     icon = Icons.Default.EmojiEvents,
                     label = "Wins",
                     value = userProfile?.duelStats?.wins?.toString() ?: "0",
-                    iconTint = MaterialTheme.colorScheme.tertiary
+                    iconTint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.fillMaxWidth(0.48f)
                 )
-                Spacer(Modifier.height(8.dp))
                 val winRate = userProfile?.duelStats?.let {
                     if (it.total > 0) String.format(Locale.US, "%.0f%%", it.winRate * 100)
                     else "0%"
@@ -89,14 +74,22 @@ fun ProfileStatsCard(
                     icon = Icons.Default.Star,
                     label = "Win Rate",
                     value = winRate,
-                    iconTint = MaterialTheme.colorScheme.primary
+                    iconTint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth(0.48f)
                 )
-                Spacer(Modifier.height(8.dp))
                 StatItem(
-                    icon = Icons.Default.Star,
+                    icon = Icons.Default.QueryStats,
+                    label = "Level",
+                    value = aggregatedLevel.toString(),
+                    iconTint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.fillMaxWidth(0.48f)
+                )
+                StatItem(
+                    icon = Icons.Default.CurrencyBitcoin,
                     label = "Beezle Coins",
                     value = beezleCoins.toString(),
-                    iconTint = MaterialTheme.colorScheme.secondary
+                    iconTint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.fillMaxWidth(0.48f)
                 )
             }
         }
@@ -113,25 +106,28 @@ private fun StatItem(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
         modifier = modifier
+            .border(CardDefaults.outlinedCardBorder(), shape = RoundedCornerShape(8.dp))
+            .padding(vertical = 4.dp, horizontal = 12.dp).padding(end = 4.dp)
     ) {
+        Column(verticalArrangement = Arrangement.Center) {
+            Text(
+                value,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                label.uppercase(),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.W300,
+            )
+        }
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = "icon for $label",
             tint = iconTint,
-            modifier = Modifier.size(16.dp)
-        )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            "$label: ",
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            value,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+            modifier = Modifier.size(24.dp)
         )
     }
 }
@@ -141,7 +137,7 @@ private fun StatItem(
 private fun ProfileStatsCardPreview() {
     BeezleTheme {
         ProfileStatsCard(
-            userProfile = null
+            userProfile = UserProfile()
         )
     }
 }
