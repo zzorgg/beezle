@@ -283,7 +283,7 @@ fun MainAppScreen(
                         name = it.first,
                         type = it.second,
                         description = it.third,
-                        modifier = Modifier.clickable { navigateToRootCallback(Route.Duels(it.second)) }
+                        modifier = Modifier.clickable { navigateToRootCallback(Route.Duels(it.second)) },
                     )
                 }
             }
