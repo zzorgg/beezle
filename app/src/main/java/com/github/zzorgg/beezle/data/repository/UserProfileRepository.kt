@@ -1,6 +1,7 @@
 package com.github.zzorgg.beezle.data.repository
 
 import com.github.zzorgg.beezle.data.model.profile.UserProfile
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -24,13 +25,14 @@ class UserProfileRepository @Inject constructor(
         } catch (e: Exception) { null }
     }
 
-    suspend fun createProfile(uid: String, suggestedUsername: String?): UserProfile {
+    suspend fun createProfile(user: FirebaseUser): UserProfile {
         val profile = UserProfile(
-            uid = uid,
-            username = suggestedUsername,
+            uid = user.uid,
+            username = user.displayName ?: user.email?.substringBefore('@'),
+            avatarUrl = user.photoUrl.toString(),
             createdAt = System.currentTimeMillis(),
         )
-        collection.document(uid).set(profile).await()
+        collection.document(user.uid).set(profile).await()
         return profile
     }
 

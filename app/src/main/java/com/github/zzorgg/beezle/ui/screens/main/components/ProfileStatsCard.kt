@@ -1,6 +1,5 @@
 package com.github.zzorgg.beezle.ui.screens.main.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -24,29 +22,31 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.github.zzorgg.beezle.data.model.profile.UserProfile
+import com.github.zzorgg.beezle.ui.components.PlayerAvatarIcon
+import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
+import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 import java.util.Locale
 
 @Composable
 fun ProfileStatsCard(
     modifier: Modifier = Modifier,
     userProfile: UserProfile?,
-    avatarUrl: String?,
     beezleCoins: Int = 0, // TODO: Add to UserProfile when implemented
 ) {
+    val aggregatedLevel = userProfile?.let { (it.mathLevel + it.csLevel) / 2 }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(160.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
+            .padding(top = 8.dp),
+        colors = CardDefaults.cardColors( containerColor = MaterialTheme.colorScheme.surfaceContainerLow )
     ) {
         Row(
             modifier = Modifier
@@ -58,54 +58,16 @@ fun ProfileStatsCard(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (avatarUrl != null) {
-                    AsyncImage(
-                        model = avatarUrl,
-                        contentDescription = "Profile",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                            .padding(12.dp)
-                    )
-                }
-
-                Spacer(Modifier.width(16.dp))
-
-                Column {
-                    Text(
-                        userProfile?.username ?: "Player",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    val avgLevel = userProfile?.let { (it.mathLevel + it.csLevel) / 2 } ?: 1
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            "Level $avgLevel",
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                PlayerAvatarIcon(
+                    model = userProfile?.avatarUrl,
+                    fallbackUsername = userProfile?.username ?: "Player",
+                    fallbackTextColor = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                )
+                Spacer(Modifier.width(8.dp))
+                LevelBadge("Level $aggregatedLevel", fontSize = 14.sp)
             }
 
             // Right side: Stats
@@ -146,7 +108,7 @@ private fun StatItem(
     icon: ImageVector,
     label: String,
     value: String,
-    iconTint: androidx.compose.ui.graphics.Color,
+    iconTint: Color,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -174,3 +136,12 @@ private fun StatItem(
     }
 }
 
+@Preview
+@Composable
+private fun ProfileStatsCardPreview() {
+    BeezleTheme {
+        ProfileStatsCard(
+            userProfile = null
+        )
+    }
+}

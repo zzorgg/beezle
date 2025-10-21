@@ -8,7 +8,6 @@ import com.github.zzorgg.beezle.data.model.profile.UserProfile
 import com.github.zzorgg.beezle.data.repository.AuthRepository
 import com.github.zzorgg.beezle.data.repository.NoGoogleAccountFoundException
 import com.github.zzorgg.beezle.data.repository.UserProfileRepository
-import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -66,10 +65,7 @@ class ProfileViewModel @Inject constructor(
             val user = authRepository.currentUser()!!
             var profile = userProfileRepository.getProfile(user.uid)
             if (profile == null) {
-                profile = userProfileRepository.createProfile(
-                    user.uid,
-                    user.displayName ?: user.email?.substringBefore('@')
-                )
+                profile = userProfileRepository.createProfile(user)
             }
             // link wallet if provided and not already linked
             if (!walletPublicKey.isNullOrBlank() && profile.walletPublicKey == null) {
@@ -127,7 +123,7 @@ class ProfileViewModel @Inject constructor(
                     return@launch
                 }
                 _profileViewState.update { it.copy(firebaseAuthStatus = AuthStatus.Success) }
-            } catch (e: NoGoogleAccountFoundException) {
+            } catch (_: NoGoogleAccountFoundException) {
                 _profileViewState.update { it.copy(firebaseAuthStatus = AuthStatus.NoGoogleAccount) }
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Sign in error", e)

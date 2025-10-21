@@ -2,7 +2,9 @@ package com.github.zzorgg.beezle.ui.screens.main
 
 import android.content.res.Configuration
 import android.os.Build
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +23,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SportsMartialArts
 import androidx.compose.material3.Card
@@ -45,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -57,7 +59,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
@@ -66,20 +67,18 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.github.zzorgg.beezle.R
-import com.github.zzorgg.beezle.data.preferences.WelcomePreferences
 import com.github.zzorgg.beezle.data.model.duel.DuelMode
-import com.github.zzorgg.beezle.data.model.profile.UserProfile
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
-import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.BannerMedia
 import com.github.zzorgg.beezle.ui.components.BannerVideoPlayer
 import com.github.zzorgg.beezle.ui.components.MonochromeAsyncImage
+import com.github.zzorgg.beezle.ui.components.PlayerAvatarIcon
 import com.github.zzorgg.beezle.ui.navigation.Route
 import com.github.zzorgg.beezle.ui.screens.main.components.ProfileStatsCard
+import com.github.zzorgg.beezle.ui.screens.profile.ProfileDataState
 import com.github.zzorgg.beezle.ui.screens.profile.ProfileViewModel
 import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
-import com.google.firebase.auth.FirebaseAuth
 
 private enum class Subject { MATH, CS }
 
@@ -88,12 +87,6 @@ private enum class Subject { MATH, CS }
 fun MainAppScreenRoot(
     navigateToRootCallback: (Route) -> Unit,
     navigateToTopLevelCallback: (Route) -> Unit,
-    welcomePreferences: WelcomePreferences = hiltViewModel<ProfileViewModel>().run {
-        // Access via DI, using a workaround since we can't inject directly into @Composable
-        LocalContext.current.let { context ->
-            remember { WelcomePreferences(context) }
-        }
-    }
 ) {
     val walletManager: SolanaWalletManager = viewModel()
     val walletState by walletManager.walletState.collectAsState()
@@ -102,10 +95,6 @@ fun MainAppScreenRoot(
     val profileViewState by profileViewModel.profileViewState.collectAsStateWithLifecycle()
     val profileDataState by profileViewModel.profileDataState.collectAsStateWithLifecycle()
 
-    // Track if welcome animation has been shown this session
-    var showWelcomeAnimation by remember { mutableStateOf(!welcomePreferences.hasShownWelcomeAnimation()) }
-
-    // Refresh when wallet public key or auth status changes
     LaunchedEffect(
         walletState.publicKey,
         profileViewState.firebaseAuthStatus
@@ -113,7 +102,6 @@ fun MainAppScreenRoot(
         profileViewModel.refresh(walletState.publicKey)
     }
 
-    val aggregatedLevel = profileDataState.userProfile?.let { (it.mathLevel + it.csLevel) / 2 }
 
     val bannerItems = listOf(
         BannerMedia.AssetGif(R.drawable.maths_banner),
@@ -121,16 +109,8 @@ fun MainAppScreenRoot(
     )
 
     MainAppScreen(
-        walletState = walletState,
+        profileDataState = profileDataState,
         bannerItems = bannerItems,
-        aggregatedLevel = aggregatedLevel,
-        avatarUrl = FirebaseAuth.getInstance().currentUser?.photoUrl?.toString(),
-        userProfile = profileDataState.userProfile,
-        showWelcomeAnimation = showWelcomeAnimation,
-        onWelcomeAnimationComplete = {
-            welcomePreferences.markWelcomeAnimationShown()
-            showWelcomeAnimation = false
-        },
         navigateToRootCallback = navigateToRootCallback,
         navigateToTopLevelCallback = navigateToTopLevelCallback,
     )
@@ -139,13 +119,8 @@ fun MainAppScreenRoot(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainAppScreen(
-    walletState: WalletState,
+    profileDataState: ProfileDataState,
     bannerItems: List<BannerMedia>,
-    aggregatedLevel: Int?,
-    avatarUrl: String?,
-    userProfile: UserProfile?,
-    showWelcomeAnimation: Boolean,
-    onWelcomeAnimationComplete: () -> Unit,
     navigateToRootCallback: (Route) -> Unit,
     navigateToTopLevelCallback: (Route) -> Unit,
     modifier: Modifier = Modifier
@@ -154,98 +129,43 @@ fun MainAppScreen(
     var selectedSubject by remember { mutableStateOf(Subject.MATH) }
     // Remove preferredWidth shrink; use full width banners like duel card
     val pagerState = rememberPagerState(pageCount = { bannerItems.size })
+    val aggregatedLevel = profileDataState.userProfile?.let { (it.mathLevel + it.csLevel) / 2 }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                ),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 title = { /* No title */ },
                 navigationIcon = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(start = 8.dp)
                     ) {
-                        if (avatarUrl != null) {
-                            AsyncImage(
-                                model = avatarUrl,
-                                contentDescription = "Profile",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .clickable { navigateToTopLevelCallback(Route.Profile) }
-                            )
-                        } else {
-                            val chipBg = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(chipBg)
-                                    .clickable { navigateToTopLevelCallback(Route.Profile) }
-                                    .padding(8.dp)
-                            )
-                        }
-                        if (aggregatedLevel != null) {
-                            Spacer(Modifier.width(8.dp))
-                            LevelBadge("Level $aggregatedLevel", fontSize = 14.sp)
-                        }
+                        PlayerAvatarIcon(
+                            model = profileDataState.userProfile?.avatarUrl,
+                            fallbackUsername = profileDataState.userProfile?.username ?: "Player",
+                            fallbackTextColor = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .clickable { navigateToTopLevelCallback(Route.Profile) },
+                            error = {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.padding(4.dp)
+                                ) {
+                                    Image(
+                                        Icons.Default.Person,
+                                        contentDescription = "Default person icon, please sign in...",
+                                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
+                                    )
+                                }
+                            }
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        LevelBadge("Level $aggregatedLevel", fontSize = 14.sp)
                     }
                 },
-                actions = {
-                    if (walletState.isConnected) {
-                        val chipBg = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
-                        Row(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .background(chipBg)
-                                .clickable { navigateToTopLevelCallback(Route.Wallet) }
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AccountBalanceWallet,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                "Wallet",
-                                color = MaterialTheme.colorScheme.tertiary,
-                                fontSize = 12.sp
-                            )
-                        }
-                    } else {
-                        val chipBg = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                        Row(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .background(chipBg)
-                                .clickable { navigateToTopLevelCallback(Route.Wallet) }
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AccountBalanceWallet,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                "Connect",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontSize = 12.sp
-                            )
-                        }
-                    }
-                }
             )
         },
     ) { innerPadding ->
@@ -324,37 +244,31 @@ fun MainAppScreen(
                 }
             }
 
-            // Welcome animation or Profile card
-            if (showWelcomeAnimation) {
+            Column {
                 val duelBannerComposition by rememberLottieComposition(LottieCompositionSpec.Asset("XO7TbUiuBv.json"))
                 val progress by animateLottieCompositionAsState(
-                    composition = duelBannerComposition,
-                    iterations = 1
+                    duelBannerComposition,
+                    restartOnPlay = false,
+                    reverseOnRepeat = false,
+                    speed = 1.5f
                 )
-
-                LottieAnimation(
-                    composition = duelBannerComposition,
-                    progress = { progress },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp)
-                        .padding(vertical = 8.dp)
-                )
-
-                // Mark animation complete when it finishes
-                LaunchedEffect(progress) {
-                    if (progress >= 1f && duelBannerComposition != null) {
-                        onWelcomeAnimationComplete()
-                    }
+                AnimatedVisibility(visible = progress < 1f) {
+                    LottieAnimation(
+                        composition = duelBannerComposition,
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp)
+                            .padding(vertical = 8.dp)
+                    )
                 }
-            } else {
-                // Show profile card after animation completes
-                ProfileStatsCard(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    userProfile = userProfile,
-                    avatarUrl = avatarUrl,
-                    beezleCoins = 0 // TODO: Implement in-app currency
-                )
+                AnimatedVisibility(visible = progress >= 1f && profileDataState.userProfile != null) {
+                    ProfileStatsCard(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        userProfile = profileDataState.userProfile,
+                        beezleCoins = 0 // TODO: Implement in-app currency
+                    )
+                }
             }
 
             Spacer(Modifier.height(8.dp))
@@ -448,19 +362,14 @@ fun MainAppScreen(
 fun MainAppScreenPreview() {
     BeezleTheme {
         MainAppScreen(
-            walletState = WalletState(),
             bannerItems = listOf(
                 BannerMedia.AssetGif(R.drawable.cs_banner),
                 BannerMedia.RemoteImage("https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/ss_5384f9f8b96a0b9934b2bc35a4058376211636d2.600x338.jpg?t=1695270428"),
                 BannerMedia.AssetGif(R.drawable.cs_banner),
             ),
-            aggregatedLevel = 2,
-            avatarUrl = null,
-            userProfile = null,
-            showWelcomeAnimation = false,
-            onWelcomeAnimationComplete = {},
             navigateToRootCallback = { },
             navigateToTopLevelCallback = {},
+            profileDataState = ProfileDataState(),
         )
     }
 }
