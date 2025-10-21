@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,15 +21,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -38,7 +38,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -69,9 +68,7 @@ import com.github.zzorgg.beezle.data.model.profile.UserProfile
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.EphemeralGreenTick
-import com.github.zzorgg.beezle.ui.components.ProfileStatsCard
 import com.github.zzorgg.beezle.ui.screens.profile.components.AuthPrompt
-import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -111,9 +108,6 @@ fun ProfileScreenRoot(
     LaunchedEffect(walletState.publicKey, uiState.firebaseAuthStatus) {
         profileViewModel.refresh(walletState.publicKey)
     }
-
-    var editing by remember { mutableStateOf(false) }
-    var usernameInput by remember { mutableStateOf("") }
 
     // Flags to control when to show success tick
     val signInInitiated = rememberSaveable { mutableStateOf(false) }
@@ -158,21 +152,6 @@ fun ProfileScreenRoot(
                         scope.launch { profileViewModel.refresh(walletState.publicKey) }
                     }
                 },
-                usernameInput = usernameInput,
-                isEditingUsername = editing,
-                editUsernameCallback = {
-                    usernameInput = it
-                },
-                editUsernameButtonCallback = {
-                    if (editing) {
-                        if (usernameInput.isNotBlank()) {
-                            profileViewModel.setUsername(usernameInput.trim())
-                        }
-                    } else {
-                        dataState.userProfile?.username?.let { usernameInput = it }
-                    }
-                    editing = !editing
-                },
                 navigateBackCallback = navigateBackCallback,
             )
         }
@@ -196,10 +175,6 @@ fun ProfileScreen(
     signOutCallback: () -> Unit,
     connectWalletCallback: () -> Unit,
     linkWalletCallback: () -> Unit,
-    isEditingUsername: Boolean,
-    usernameInput: String,
-    editUsernameCallback: (String) -> Unit,
-    editUsernameButtonCallback: () -> Unit,
     navigateBackCallback: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -219,8 +194,16 @@ fun ProfileScreen(
                         )
                     }
                 },
-                // Removed old sign-out action to move logout button to bottom per new design
-                actions = {},
+                actions = {
+                    // Logout moved to the top bar per request
+                    IconButton(onClick = signOutCallback) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Logout",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                },
                 windowInsets = WindowInsets(0, 0, 0, 0)
             )
         },
@@ -286,52 +269,29 @@ fun ProfileScreen(
 
                         AuthStatus.Success -> {
                             val profile = dataState.userProfile!!
-                            // New layout: scrollable content + logout pinned bottom
+                            // Updated layout: scrollable content; logout moved to top bar
                             Column(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(horizontal = 12.dp),
-                                verticalArrangement = Arrangement.SpaceBetween
+                                    .padding(horizontal = 12.dp)
                             ) {
-                                // Scrollable area
                                 Column(
                                     modifier = Modifier
-                                        .weight(1f, fill = true)
+                                        .fillMaxWidth()
                                         .padding(top = 8.dp)
                                         .verticalScroll(rememberScrollState())
                                 ) {
                                     // Hero Section
                                     HeroProfileSection(firebaseUser, profile)
                                     Spacer(Modifier.height(20.dp))
-                                    // Username editing & levels card
-                                    ProfileStatsCard(userProfile = profile)
-                                    Spacer(Modifier.height(16.dp))
+                                    // Wallet section
                                     WalletCard(
                                         profile = profile,
                                         walletState = walletState,
                                         connectWalletCallback = connectWalletCallback,
                                         linkWalletCallback = linkWalletCallback
                                     )
-                                    Spacer(Modifier.height(80.dp)) // space before button
-                                }
-                                // Logout button
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Button(
-                                        onClick = signOutCallback,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 8.dp),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.primary,
-                                            contentColor = MaterialTheme.colorScheme.onPrimary
-                                        )
-                                    ) {
-                                        Text("Logout")
-                                    }
-                                    Spacer(Modifier.height(12.dp))
+                                    Spacer(Modifier.height(16.dp))
                                 }
                             }
                         }
@@ -386,65 +346,7 @@ private fun HeroProfileSection(firebaseUser: FirebaseUser?, profile: UserProfile
                 )
             }
             Spacer(Modifier.height(10.dp))
-            // Levels inline quick glance
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                LevelBadge("Math Lv ${profile.mathLevel}")
-                LevelBadge("CS Lv ${profile.csLevel}")
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProfileInfoCard(
-    profile: UserProfile,
-    isEditingUsername: Boolean,
-    usernameInput: String,
-    editUsernameCallback: (String) -> Unit,
-    editUsernameButtonCallback: () -> Unit,
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            // Removed 'Account' heading per request
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    // Removed explicit "Username" label to streamline (optional). If needed keep below line commented
-                    // Text("Username", color = TextSecondary, fontSize = 12.sp)
-                    if (isEditingUsername) {
-                        OutlinedTextField(
-                            value = usernameInput,
-                            onValueChange = editUsernameCallback,
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Username") }
-                        )
-                    } else {
-                        Text(
-                            profile.username ?: "Add a username",
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-                IconButton(onClick = editUsernameButtonCallback) {
-                    Icon(
-                        Icons.Default.Edit,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = "Duels: ${profile.duelStats.wins}W / ${profile.duelStats.losses}L  (Win ${(profile.duelStats.winRate * 100).toInt()}%)",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 14.sp
-            )
+            // Removed Math/CS level badges per request
         }
     }
 }
@@ -674,10 +576,6 @@ private fun ProfileScreenPreview() {
             signOutCallback = {},
             connectWalletCallback = {},
             linkWalletCallback = {},
-            isEditingUsername = false,
-            usernameInput = "",
-            editUsernameCallback = {},
-            editUsernameButtonCallback = {},
             navigateBackCallback = {}
         )
     }
@@ -706,10 +604,6 @@ private fun ProfileScreenPreview_SignedIn() {
             signOutCallback = {},
             connectWalletCallback = {},
             linkWalletCallback = {},
-            isEditingUsername = false,
-            usernameInput = "",
-            editUsernameCallback = {},
-            editUsernameButtonCallback = {},
             navigateBackCallback = {}
         )
     }
