@@ -9,7 +9,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -53,9 +53,10 @@ fun TopLevelNavHost(
             val view = LocalView.current
             val chipBg = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
 
-            // Attached bottom bar with default Material3 styling
+            // Attached bottom bar with compact height to maximize content area
             NavigationBar(
-                // Use default windowInsets so bar sits at the bottom and handles system bars
+                modifier = Modifier.fillMaxWidth().height(64.dp),
+                // Use zero insets since Scaffold content already receives innerPadding for the bar
                 windowInsets = WindowInsets(0, 0, 0, 0),
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 tonalElevation = 3.dp
