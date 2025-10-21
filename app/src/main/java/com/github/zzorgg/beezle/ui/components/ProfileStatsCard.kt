@@ -1,4 +1,4 @@
-package com.github.zzorgg.beezle.ui.screens.main.components
+package com.github.zzorgg.beezle.ui.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.border
@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,12 +40,13 @@ fun ProfileStatsCard(
     modifier: Modifier = Modifier,
     userProfile: UserProfile?,
     beezleCoins: Int = 0, // TODO: Add to UserProfile when implemented
+    colors: CardColors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
 ) {
     val aggregatedLevel = userProfile?.let { (it.mathLevel + it.csLevel) / 2 }
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        colors = colors,
     ) {
         Column(
             modifier = Modifier.padding(8.dp)
@@ -110,7 +112,8 @@ private fun StatItem(
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = modifier
             .border(CardDefaults.outlinedCardBorder(), shape = RoundedCornerShape(8.dp))
-            .padding(vertical = 4.dp, horizontal = 12.dp).padding(end = 4.dp)
+            .padding(vertical = 4.dp, horizontal = 12.dp)
+            .padding(end = 4.dp)
     ) {
         Column(verticalArrangement = Arrangement.Center) {
             Text(

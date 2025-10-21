@@ -3,9 +3,7 @@ package com.github.zzorgg.beezle.ui.screens.main
 import android.content.res.Configuration
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,14 +22,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.SportsMartialArts
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
@@ -40,9 +34,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,7 +42,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -73,14 +63,13 @@ import com.github.zzorgg.beezle.ui.components.BannerMedia
 import com.github.zzorgg.beezle.ui.components.BannerVideoPlayer
 import com.github.zzorgg.beezle.ui.components.MonochromeAsyncImage
 import com.github.zzorgg.beezle.ui.components.PlayerAvatarIcon
+import com.github.zzorgg.beezle.ui.components.ProfileStatsCard
 import com.github.zzorgg.beezle.ui.navigation.Route
-import com.github.zzorgg.beezle.ui.screens.main.components.ProfileStatsCard
+import com.github.zzorgg.beezle.ui.screens.main.components.DuelCard
 import com.github.zzorgg.beezle.ui.screens.profile.ProfileDataState
 import com.github.zzorgg.beezle.ui.screens.profile.ProfileViewModel
 import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
-
-private enum class Subject { MATH, CS }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -125,9 +114,6 @@ fun MainAppScreen(
     navigateToTopLevelCallback: (Route) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val subjectLabels = mapOf(Subject.MATH to "Math", Subject.CS to "CS")
-    var selectedSubject by remember { mutableStateOf(Subject.MATH) }
-    // Remove preferredWidth shrink; use full width banners like duel card
     val pagerState = rememberPagerState(pageCount = { bannerItems.size })
     val aggregatedLevel = profileDataState.userProfile?.let { (it.mathLevel + it.csLevel) / 2 }
 
@@ -266,92 +252,41 @@ fun MainAppScreen(
                     ProfileStatsCard(
                         modifier = Modifier.padding(vertical = 8.dp),
                         userProfile = profileDataState.userProfile,
-                        beezleCoins = 0 // TODO: Implement in-app currency
+                        beezleCoins = 0, // TODO: Implement in-app currency
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
                     )
                 }
             }
 
             Spacer(Modifier.height(8.dp))
 
-            // Replace Welcome header + Subject toggle with only colored subject tags
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp)
-            ) {
-                Subject.entries.forEach { subject ->
-                    val selected = subject == selectedSubject
-                    val baseColor =
-                        if (subject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
-                    val bgColor by animateColorAsState(
-                        if (selected) baseColor.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceContainerLow,
-                        label = "subjectBg"
-                    )
-                    val textColor by animateColorAsState(
-                        if (selected) baseColor else baseColor.copy(alpha = 0.75f),
-                        label = "subjectText"
-                    )
-                    Box(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(bgColor)
-                            .clickable { selectedSubject = subject }
-                            .padding(horizontal = 16.dp, vertical = 10.dp)
-                    ) {
-                        Text(
-                            subjectLabels[subject]!!,
-                            color = textColor,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
+            val duels = listOf(
+                Triple<String, DuelMode, String?>(
+                    "Math Duel",
+                    DuelMode.MATH,
+                    "Real-time competitive play"
+                ),
+                Triple<String, DuelMode, String?>(
+                    "General CS Duel",
+                    DuelMode.CS,
+                    "Real-time competitive play"
+                ),
+            )
 
-            Spacer(Modifier.height(16.dp))
-
-            // Two cards: Duel Mode & Practice Mode for selected subject
             Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            // Navigate to duel screen with selected mode
-                            val mode =
-                                if (selectedSubject == Subject.MATH) DuelMode.MATH else DuelMode.CS
-                            navigateToRootCallback(Route.Duels(mode))
-                        },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-                ) {
-                    Column(Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.SportsMartialArts,
-                                contentDescription = null,
-                                tint = if (selectedSubject == Subject.MATH) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                "${subjectLabels[selectedSubject]} Duel Mode",
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            "Real-time competitive play",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 12.sp
-                        )
-                    }
+                duels.forEach {
+                    DuelCard(
+                        name = it.first,
+                        type = it.second,
+                        description = it.third,
+                        modifier = Modifier.clickable { navigateToRootCallback(Route.Duels(it.second)) }
+                    )
                 }
             }
-            Spacer(Modifier.height(96.dp)) // bottom padding to avoid cropping behind bottom bar
         }
     }
 }

@@ -68,7 +68,7 @@ import com.github.zzorgg.beezle.data.model.profile.UserProfile
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.EphemeralGreenTick
-import com.github.zzorgg.beezle.ui.screens.main.components.ProfileStatsCard
+import com.github.zzorgg.beezle.ui.components.ProfileStatsCard
 import com.github.zzorgg.beezle.ui.screens.profile.components.AuthPrompt
 import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
