@@ -59,7 +59,7 @@ fun DuelCard(
                         )
                 ) {
                     Text(
-                        text = type.name.lowercase().toTitleCase(),
+                        text = type.name,
                         modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
                         color =
                             if (type == DuelMode.MATH) MaterialTheme.colorScheme.primary
@@ -83,19 +83,12 @@ fun DuelCard(
                 if (!description.isNullOrBlank()) {
                     Text(
                         text = description,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.W300,
                     )
                 }
             }
             Icon(Icons.Default.PlayArrow, "Start Duel")
-        }
-    }
-}
-
-fun String.toTitleCase(): String {
-    return this.split(" ").joinToString(" ") { word ->
-        word.replaceFirstChar {
-            if (it.isLowerCase()) it.titlecase() else it.toString()
         }
     }
 }

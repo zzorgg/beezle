@@ -11,9 +11,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -113,17 +113,22 @@ fun TopLevelNavHost(
                             colors = NavigationBarItemDefaults.colors(
                                 indicatorColor = chipBg,
                                 selectedIconColor = MaterialTheme.colorScheme.primary,
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                    alpha = 0.6f
+                                )
                             )
                         )
                     }
                 }
             }
         }
-    ) {
+    ) { innerPadding ->
         NavHost(
             navController = topLevelNavController,
             startDestination = Route.Home,
+            modifier = Modifier
+                .padding(bottom = 66.dp)
+            ,
             enterTransition = {
                 slideInHorizontally(
                     animationSpec = spring(
