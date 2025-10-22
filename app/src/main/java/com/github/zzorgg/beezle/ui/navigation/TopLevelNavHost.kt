@@ -7,9 +7,12 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +22,8 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -44,20 +49,28 @@ fun TopLevelNavHost(
 ) {
     val topLevelNavController = rememberNavController()
     val navigateBackCallback: () -> Unit = topLevelNavController::popBackStack
+    val navBackStackEntry = topLevelNavController.currentBackStackEntryAsState().value
+    val currentDestination = navBackStackEntry?.destination
+    val view = LocalView.current
+    val chipBg = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+    val density = LocalDensity.current
+    val customWindowInsets = WindowInsets(
+        top = 0,
+        left = WindowInsets.navigationBars.getLeft(density, LocalLayoutDirection.current),
+        right = WindowInsets.navigationBars.getRight(density, LocalLayoutDirection.current),
+        bottom = 0,
+    )
 
     Scaffold(
         modifier = modifier,
         bottomBar = {
-            val navBackStackEntry = topLevelNavController.currentBackStackEntryAsState().value
-            val currentDestination = navBackStackEntry?.destination
-            val view = LocalView.current
-            val chipBg = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-
-            // Attached bottom bar with compact height to maximize content area
             NavigationBar(
-                modifier = Modifier.fillMaxWidth().height(64.dp),
-                // Use zero insets since Scaffold content already receives innerPadding for the bar
-                windowInsets = WindowInsets(0, 0, 0, 0),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = 8.dp)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .offset(y = 1.dp),
+                windowInsets = customWindowInsets,
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 tonalElevation = 3.dp
             ) {
@@ -80,6 +93,9 @@ fun TopLevelNavHost(
                         },
                         icon = { Icon(item.second, item.third) },
                         alwaysShowLabel = false,
+                        modifier = Modifier
+                            .height(58.dp)
+                            .padding(bottom = 16.dp),
                         colors = NavigationBarItemDefaults.colors(
                             indicatorColor = chipBg,
                             selectedIconColor = MaterialTheme.colorScheme.primary,
@@ -95,8 +111,7 @@ fun TopLevelNavHost(
         NavHost(
             navController = topLevelNavController,
             startDestination = Route.Home,
-            modifier = Modifier
-                .padding(innerPadding),
+            modifier = Modifier.padding(bottom = 48.dp),
             enterTransition = {
                 slideInHorizontally(
                     animationSpec = spring(

@@ -37,8 +37,8 @@ import java.util.Locale
 
 @Composable
 fun ProfileStatsCard(
-    modifier: Modifier = Modifier,
     userProfile: UserProfile?,
+    modifier: Modifier = Modifier,
     beezleCoins: Int = 0, // TODO: Add to UserProfile when implemented
     colors: CardColors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
 ) {

@@ -64,13 +64,13 @@ fun DuelCard(
                         color =
                             if (type == DuelMode.MATH) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.tertiary,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
                 var displayName by remember { mutableStateOf(name) }
                 Text(
                     text = displayName.uppercase(),
-                    style = MaterialTheme.typography.displayMedium,
+                    style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
                     onTextLayout = { result ->
                         if (result.lineCount < 2) {
@@ -83,7 +83,7 @@ fun DuelCard(
                 if (!description.isNullOrBlank()) {
                     Text(
                         text = description,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.W300,
                     )
                 }

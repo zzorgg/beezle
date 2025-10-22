@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -68,6 +67,7 @@ import com.github.zzorgg.beezle.data.model.profile.UserProfile
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
 import com.github.zzorgg.beezle.ui.components.EphemeralGreenTick
+import com.github.zzorgg.beezle.ui.components.ProfileStatsCard
 import com.github.zzorgg.beezle.ui.screens.profile.components.AuthPrompt
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 import com.google.firebase.auth.FirebaseAuth
@@ -204,7 +204,6 @@ fun ProfileScreen(
                         )
                     }
                 },
-                windowInsets = WindowInsets(0, 0, 0, 0)
             )
         },
     ) { innerPadding ->
@@ -279,19 +278,19 @@ fun ProfileScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(top = 8.dp)
-                                        .verticalScroll(rememberScrollState())
+                                        .verticalScroll(rememberScrollState()),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
-                                    // Hero Section
                                     HeroProfileSection(firebaseUser, profile)
-                                    Spacer(Modifier.height(20.dp))
-                                    // Wallet section
                                     WalletCard(
                                         profile = profile,
                                         walletState = walletState,
                                         connectWalletCallback = connectWalletCallback,
                                         linkWalletCallback = linkWalletCallback
                                     )
-                                    Spacer(Modifier.height(16.dp))
+                                    if (walletState.isConnected) {
+                                        ProfileStatsCard(userProfile = profile)
+                                    }
                                 }
                             }
                         }
@@ -581,10 +580,10 @@ private fun ProfileScreenPreview() {
     }
 }
 
-@Preview
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun ProfileScreenPreview_SignedIn() {
+private fun ProfileScreenPreview_SignedIn_Wallet_Disconnected() {
     BeezleTheme {
         ProfileScreen(
             uiState = ProfileViewState(
@@ -600,6 +599,38 @@ private fun ProfileScreenPreview_SignedIn() {
             ),
             firebaseUser = null,
             walletState = WalletState(),
+            signInCallback = { },
+            signOutCallback = {},
+            connectWalletCallback = {},
+            linkWalletCallback = {},
+            navigateBackCallback = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun ProfileScreenPreview_SignedIn_Wallet_Connected() {
+    BeezleTheme {
+        ProfileScreen(
+            uiState = ProfileViewState(
+                firebaseAuthStatus = AuthStatus.Success,
+                userProfileStatus = AuthStatus.Success
+            ),
+            dataState = ProfileDataState(
+                userProfile = UserProfile(
+                    uid = "23412e",
+                    walletPublicKey = "7asdababshdjkabhdjkag778",
+                    username = "Test User"
+                )
+            ),
+            firebaseUser = null,
+            walletState = WalletState(
+                isConnected = true,
+                walletName = "Test wallet",
+                authToken = "Asdajkldsaj"
+            ),
             signInCallback = { },
             signOutCallback = {},
             connectWalletCallback = {},
