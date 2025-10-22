@@ -1,4 +1,4 @@
-package com.github.zzorgg.beezle.ui.screens.main.components
+package com.github.zzorgg.beezle.ui.screens.home.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background

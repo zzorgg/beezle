@@ -1,4 +1,4 @@
-package com.github.zzorgg.beezle
+package com.github.zzorgg.beezle.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class MainViewModel @Inject constructor(
+class HomeViewModel @Inject constructor(
     private val localDataStoreRepository: LocalDataStoreRepository
 ) : ViewModel() {
     val localData: StateFlow<LocalData> = localDataStoreRepository.localData.stateIn(
@@ -23,21 +23,9 @@ class MainViewModel @Inject constructor(
         initialValue = LocalData()
     )
 
-    fun finishOnBoarding() {
+    fun finishWelcomeGif() {
         viewModelScope.launch(Dispatchers.IO) {
-            localDataStoreRepository.update(localData.first().copy(hasOnboarded = true))
-        }
-    }
-
-    fun connectedWallet() {
-        viewModelScope.launch(Dispatchers.IO) {
-            localDataStoreRepository.update(localData.first().copy(hasConnectedWallet = true))
-        }
-    }
-
-    fun resetWelcomeGifStatus() {
-        viewModelScope.launch(Dispatchers.IO) {
-            localDataStoreRepository.update(localData.first().copy(hasWelcomeGifCompleted = false))
+            localDataStoreRepository.update(localData.first().copy(hasWelcomeGifCompleted = true))
         }
     }
 }

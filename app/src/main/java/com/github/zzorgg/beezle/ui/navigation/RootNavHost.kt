@@ -60,6 +60,7 @@ fun RootNavHost(
             SplashScreen(onFinished = {
                 val destination =
                     if (localData.hasOnboarded) Route.TopLevelRoutes else Route.Onboarding
+                mainViewModel.resetWelcomeGifStatus()
                 navController.navigate(destination) {
                     popUpTo(Route.Splash) { inclusive = true }
                 }

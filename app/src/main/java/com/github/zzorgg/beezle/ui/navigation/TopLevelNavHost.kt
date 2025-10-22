@@ -36,7 +36,7 @@ import androidx.navigation.compose.rememberNavController
 import com.github.zzorgg.beezle.ui.screens.duel.components.Category
 import com.github.zzorgg.beezle.ui.screens.duel.components.DuelsPracticeScreenRoot
 import com.github.zzorgg.beezle.ui.screens.leaderboards.LeaderboardsScreen
-import com.github.zzorgg.beezle.ui.screens.main.MainAppScreenRoot
+import com.github.zzorgg.beezle.ui.screens.home.MainAppScreenRoot
 import com.github.zzorgg.beezle.ui.screens.profile.ProfileScreenRoot
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 

@@ -1,4 +1,4 @@
-package com.github.zzorgg.beezle.ui.screens.main
+package com.github.zzorgg.beezle.ui.screens.home
 
 import android.content.res.Configuration
 import android.os.Build
@@ -65,7 +65,7 @@ import com.github.zzorgg.beezle.ui.components.MonochromeAsyncImage
 import com.github.zzorgg.beezle.ui.components.PlayerAvatarIcon
 import com.github.zzorgg.beezle.ui.components.ProfileStatsCard
 import com.github.zzorgg.beezle.ui.navigation.Route
-import com.github.zzorgg.beezle.ui.screens.main.components.DuelCard
+import com.github.zzorgg.beezle.ui.screens.home.components.DuelCard
 import com.github.zzorgg.beezle.ui.screens.profile.ProfileDataState
 import com.github.zzorgg.beezle.ui.screens.profile.ProfileViewModel
 import com.github.zzorgg.beezle.ui.screens.profile.components.LevelBadge
@@ -76,6 +76,7 @@ import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 fun MainAppScreenRoot(
     navigateToRootCallback: (Route) -> Unit,
     navigateToTopLevelCallback: (Route) -> Unit,
+    homeViewModel: HomeViewModel = hiltViewModel(),
 ) {
     val walletManager: SolanaWalletManager = viewModel()
     val walletState by walletManager.walletState.collectAsState()
@@ -83,6 +84,8 @@ fun MainAppScreenRoot(
     val profileViewModel: ProfileViewModel = hiltViewModel()
     val profileViewState by profileViewModel.profileViewState.collectAsStateWithLifecycle()
     val profileDataState by profileViewModel.profileDataState.collectAsStateWithLifecycle()
+    
+    val localData by homeViewModel.localData.collectAsStateWithLifecycle()
 
     LaunchedEffect(
         walletState.publicKey,
@@ -90,7 +93,6 @@ fun MainAppScreenRoot(
     ) {
         profileViewModel.refresh(walletState.publicKey)
     }
-
 
     val bannerItems = listOf(
         BannerMedia.AssetGif(R.drawable.maths_banner),
@@ -102,6 +104,8 @@ fun MainAppScreenRoot(
         bannerItems = bannerItems,
         navigateToRootCallback = navigateToRootCallback,
         navigateToTopLevelCallback = navigateToTopLevelCallback,
+        showWelcomeGif = !localData.hasWelcomeGifCompleted,
+        onWelcomeGifComplete = { homeViewModel.finishWelcomeGif() }
     )
 }
 
@@ -112,6 +116,8 @@ fun MainAppScreen(
     bannerItems: List<BannerMedia>,
     navigateToRootCallback: (Route) -> Unit,
     navigateToTopLevelCallback: (Route) -> Unit,
+    showWelcomeGif: Boolean,
+    onWelcomeGifComplete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val pagerState = rememberPagerState(pageCount = { bannerItems.size })
@@ -238,7 +244,7 @@ fun MainAppScreen(
                     reverseOnRepeat = false,
                     speed = 1.5f
                 )
-                AnimatedVisibility(visible = progress < 1f) {
+                AnimatedVisibility(visible = showWelcomeGif && progress < 1f) {
                     LottieAnimation(
                         composition = duelBannerComposition,
                         progress = { progress },
@@ -248,7 +254,10 @@ fun MainAppScreen(
                             .padding(vertical = 8.dp)
                     )
                 }
-                AnimatedVisibility(visible = progress >= 1f && profileDataState.userProfile != null) {
+                if(showWelcomeGif && progress >= 1f) {
+                    onWelcomeGifComplete()
+                }
+                AnimatedVisibility(visible = !showWelcomeGif || (progress >= 1f && profileDataState.userProfile != null)) {
                     ProfileStatsCard(
                         modifier = Modifier.padding(vertical = 8.dp),
                         userProfile = profileDataState.userProfile,
@@ -304,7 +313,9 @@ fun MainAppScreenPreview() {
             ),
             navigateToRootCallback = { },
             navigateToTopLevelCallback = {},
+            onWelcomeGifComplete = {},
             profileDataState = ProfileDataState(),
+            showWelcomeGif = false,
         )
     }
 }
