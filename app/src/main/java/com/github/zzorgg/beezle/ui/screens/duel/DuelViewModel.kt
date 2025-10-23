@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.github.zzorgg.beezle.data.model.duel.DuelMode
 import com.github.zzorgg.beezle.data.model.duel.DuelState
 import com.github.zzorgg.beezle.data.repository.DuelRepository
+import com.github.zzorgg.beezle.data.repository.UserProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
@@ -13,10 +14,13 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DuelViewModel @Inject constructor(
-    private val duelRepository: DuelRepository
+    private val duelRepository: DuelRepository,
+    private val userProfileRepository: UserProfileRepository,
 ) : ViewModel() {
 
     val duelState: StateFlow<DuelState> = duelRepository.duelState
+
+    fun getMyId() = userProfileRepository.getCurrentUid()
 
     fun connectToServer() {
         duelRepository.connectToServer()

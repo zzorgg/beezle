@@ -15,14 +15,14 @@ class UserProfileRepository @Inject constructor(
 ) {
     private val collection get() = firestore.collection("users")
 
-    suspend fun getCurrentUid(): String? = authRepository.currentUser()?.uid
+    fun getCurrentUid(): String? = authRepository.currentUser()?.uid
 
     suspend fun getProfile(uid: String?): UserProfile? {
         if(uid == null) return null
         return try {
             val snap = collection.document(uid).get().await()
             if (snap.exists()) snap.toObject(UserProfile::class.java) else null
-        } catch (e: Exception) { null }
+        } catch (_: Exception) { null }
     }
 
     suspend fun createProfile(user: FirebaseUser): UserProfile {

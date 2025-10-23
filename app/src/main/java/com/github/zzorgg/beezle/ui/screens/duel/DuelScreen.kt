@@ -1,6 +1,8 @@
 package com.github.zzorgg.beezle.ui.screens.duel
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -61,12 +63,13 @@ import com.github.zzorgg.beezle.ui.screens.duel.components.MatchFoundScreen
 import com.github.zzorgg.beezle.ui.screens.duel.components.SearchingScreen
 import kotlinx.coroutines.delay
 
+@RequiresApi(Build.VERSION_CODES.R)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DuelScreen(
     onNavigateBack: () -> Unit,
     initialMode: DuelMode? = null,
-    viewModel: DuelViewModel = hiltViewModel()
+    viewModel: DuelViewModel = hiltViewModel(),
 ) {
     val duelState by viewModel.duelState.collectAsState()
     var selectedMode by remember { mutableStateOf(initialMode ?: DuelMode.MATH) }
@@ -87,7 +90,7 @@ fun DuelScreen(
     duelState.lastGameResult?.let { result ->
         GameOverDialog(
             result = result,
-            myId = viewModel.duelState.value.currentRoom?.player1?.id ?: "",
+            myId = viewModel.getMyId() ?: "",
             onDismiss = {
                 viewModel.clearGameResult()
                 viewModel.disconnect()
