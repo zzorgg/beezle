@@ -154,8 +154,6 @@ fun MainAppScreen(
                                 }
                             }
                         )
-                        Spacer(Modifier.width(8.dp))
-                        LevelBadge("Level $aggregatedLevel", fontSize = 14.sp)
                     }
                 },
             )

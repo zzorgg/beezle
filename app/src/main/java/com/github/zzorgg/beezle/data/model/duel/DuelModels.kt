@@ -32,9 +32,6 @@ data class DuelRoom(
 data class Question(
     val id: String,
     val text: String,
-    val options: List<String>,
-    val correctAnswer: Int,
-    val timeLimit: Int = 15,
     val roundNumber: Int = 1
 )
 
@@ -75,6 +72,20 @@ sealed class WebSocketMessage {
         val opponent_id: String,
         val opponent_name: String,
         val queue_delta_ms: Long? = null
+    )
+
+    @Serializable
+    data class CurrentQuestion(
+        val action: String = "current_question",
+        val data: CurrentQuestionData,
+    ): WebSocketMessage()
+
+    @Serializable
+    data class CurrentQuestionData(
+        val match_id: String,
+        val question_id: String,
+        val text: String,
+        val round_number: Int,
     )
 
     @Serializable
@@ -182,8 +193,6 @@ data class DuelState(
     val currentRoom: DuelRoom? = null,
     val currentQuestion: Question? = null,
     val timeRemaining: Int = 15,
-    val selectedAnswer: Int? = null,
-    val hasAnswered: Boolean = false,
     val lastGameResult: WebSocketMessage.GameOver? = null,
     val error: String? = null,
     val isSearching: Boolean = false,
@@ -192,8 +201,8 @@ data class DuelState(
     val queueSince: Long? = null,
     val selectedMode: DuelMode? = null,
     val currentRound: Int = 0,
-    val totalRounds: Int = 5,
     val myScore: Int = 0,
+    val lastAnswerCorrect: Boolean? = null,
     val opponentScore: Int = 0,
     val opponentAnswered: Boolean = false
 )

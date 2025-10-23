@@ -34,8 +34,8 @@ class DuelViewModel @Inject constructor(
         duelRepository.leaveQueue()
     }
 
-    fun submitAnswer(answerIndex: Int) {
-        duelRepository.submitAnswer(answerIndex)
+    fun submitAnswer(answer: String) {
+        duelRepository.submitAnswer(answer)
     }
 
     fun clearError() {

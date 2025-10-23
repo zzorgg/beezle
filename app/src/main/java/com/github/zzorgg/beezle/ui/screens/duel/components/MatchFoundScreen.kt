@@ -104,11 +104,7 @@ private fun WaitingForQuestionScreenPreview() {
                 currentQuestion = Question(
                     id = "sewd",
                     text = "What is the what",
-                    options = listOf("Wh", "Wha", "W", "What"),
-                    correctAnswer = 3
                 ),
-                selectedAnswer = 2,
-                hasAnswered = false,
                 error = null,
                 isSearching = false,
                 connectionStatus = ConnectionStatus.CONNECTED,

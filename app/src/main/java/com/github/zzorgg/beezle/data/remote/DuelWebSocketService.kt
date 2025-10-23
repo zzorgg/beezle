@@ -119,6 +119,10 @@ class DuelWebSocketService @Inject constructor() {
                             val message = json.decodeFromString<WebSocketMessage.Error>(text)
                             _messageChannel.trySend(message)
                         }
+                        "current_question" -> {
+                            val message = json.decodeFromString<WebSocketMessage.CurrentQuestion>(text)
+                            _messageChannel.trySend(message)
+                        }
                         null -> {
                             Log.w(TAG, "⚠️ Message missing action field: $text")
                         }

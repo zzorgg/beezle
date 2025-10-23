@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
@@ -47,21 +48,8 @@ class DuelRepository @Inject constructor(
     // Cache for Firebase questions
     private var firebaseMathQuestions: List<FirebaseMathQuestion> = emptyList()
 
-    // Fallback CS questions (when mode is CS or GENERAL)
-    private val csQuestions = listOf(
-        Triple("Time complexity of binary search?", listOf("O(n)", "O(log n)", "O(n²)", "O(1)"), 1),
-        Triple("FIFO data structure?", listOf("Stack", "Queue", "Tree", "Graph"), 1),
-        Triple("Which is not OOP principle?", listOf("Encapsulation", "Polymorphism", "Recursion", "Inheritance"), 2),
-        Triple("REST API uses which protocol?", listOf("FTP", "SMTP", "HTTP", "SSH"), 2),
-        Triple("SQL stands for?", listOf("Standard Query Language", "Structured Query Language", "Sequential Query Language", "System Query Language"), 1),
-        Triple("Git command to save changes?", listOf("git save", "git push", "git commit", "git update"), 2),
-        Triple("Which stores key-value pairs?", listOf("Array", "HashMap", "LinkedList", "Tree"), 1),
-        Triple("TCP connection uses how many handshakes?", listOf("1", "2", "3", "4"), 2),
-    )
-
     companion object {
         private const val TAG = "DuelRepository"
-        private const val QUESTION_TIME_LIMIT = 15
         private const val JOIN_QUEUE_DEBOUNCE_MS = 3000L
     }
 
@@ -147,11 +135,18 @@ class DuelRepository @Inject constructor(
                     opponentScore = 0,
                     currentRound = 0
                 )
+            }
 
-                // Start the first round
-                scope.launch {
-                    delay(1500) // Brief delay to show "Match Found" screen
-                    startNextRound()
+            is WebSocketMessage.CurrentQuestion -> {
+                Log.d(TAG, "Receive question with id: ${message.data.question_id}")
+                _duelState.update {
+                    it.copy(
+                        currentQuestion = Question(
+                            id = message.data.question_id,
+                            text = message.data.text,
+                            roundNumber = message.data.round_number,
+                        )
+                    )
                 }
             }
 
@@ -164,16 +159,9 @@ class DuelRepository @Inject constructor(
                 _duelState.value = _duelState.value.copy(
                     myScore = myScore,
                     opponentScore = opponentScore,
-                    currentRound = message.data.round_number
+                    currentRound = message.data.round_number,
+                    lastAnswerCorrect = message.data.correct,
                 )
-
-                // Show round result briefly, then move to next round
-                scope.launch {
-                    delay(2000)
-                    if (message.data.round_number < totalRounds) {
-                        startNextRound()
-                    }
-                }
             }
 
             is WebSocketMessage.OpponentAnswer -> {
@@ -217,8 +205,8 @@ class DuelRepository @Inject constructor(
                 }
                 _duelState.value = _duelState.value.copy(
                     error = if (alreadyRegistered) null else message.data.message,
-                    isInQueue = if (alreadyRegistered) true else false,
-                    isSearching = if (alreadyRegistered) true else false
+                    isInQueue = alreadyRegistered,
+                    isSearching = alreadyRegistered,
                 )
             }
 
@@ -228,136 +216,7 @@ class DuelRepository @Inject constructor(
         }
     }
 
-    private fun startNextRound() {
-        currentRound++
-
-        if (currentRound > totalRounds) {
-            Log.d(TAG, "All rounds completed")
-            return
-        }
-
-        val question = generateQuestion()
-        _duelState.value = _duelState.value.copy(
-            currentQuestion = question,
-            timeRemaining = QUESTION_TIME_LIMIT,
-            selectedAnswer = null,
-            hasAnswered = false,
-            opponentAnswered = false,
-            currentRound = currentRound
-        )
-
-        startQuestionTimer()
-    }
-
-    private fun generateQuestion(): Question {
-        val mode = _duelState.value.selectedMode ?: DuelMode.MATH
-
-        return when (mode) {
-            DuelMode.MATH -> generateMathQuestion()
-            DuelMode.CS -> generateCSQuestion()
-            DuelMode.GENERAL -> if (Random.nextBoolean()) generateMathQuestion() else generateCSQuestion()
-        }
-    }
-
-    private fun generateMathQuestion(): Question {
-        // Use Firebase questions if available, otherwise fallback
-        if (firebaseMathQuestions.isNotEmpty()) {
-            val firebaseQ = firebaseMathQuestions.random()
-
-            // Generate multiple choice options based on the correct answer
-            val correctAnswer = firebaseQ.answer
-            val options = generateMathOptions(correctAnswer)
-            val correctIndex = options.indexOf(correctAnswer.toString())
-
-            return Question(
-                id = "q_${currentMatchId}_$currentRound",
-                text = firebaseQ.question,
-                options = options,
-                correctAnswer = correctIndex,
-                timeLimit = QUESTION_TIME_LIMIT,
-                roundNumber = currentRound
-            )
-        } else {
-            // Fallback to hardcoded questions if Firebase is unavailable
-            Log.w(TAG, "Using fallback math questions")
-            val fallbackQuestions = listOf(
-                Triple("15 + 27 = ?", listOf("40", "41", "42", "43"), 2),
-                Triple("8 × 9 = ?", listOf("64", "72", "81", "56"), 1),
-                Triple("100 - 37 = ?", listOf("63", "73", "67", "53"), 0),
-                Triple("144 ÷ 12 = ?", listOf("11", "12", "13", "14"), 1),
-                Triple("5² = ?", listOf("10", "15", "20", "25"), 3),
-                Triple("√64 = ?", listOf("6", "7", "8", "9"), 2),
-                Triple("25 × 4 = ?", listOf("90", "95", "100", "105"), 2),
-                Triple("3³ = ?", listOf("9", "18", "27", "36"), 2),
-            )
-            val (text, options, correctIndex) = fallbackQuestions.random()
-            return Question(
-                id = "q_${currentMatchId}_$currentRound",
-                text = text,
-                options = options,
-                correctAnswer = correctIndex,
-                timeLimit = QUESTION_TIME_LIMIT,
-                roundNumber = currentRound
-            )
-        }
-    }
-
-    private fun generateCSQuestion(): Question {
-        val (text, options, correctIndex) = csQuestions.random()
-        return Question(
-            id = "q_${currentMatchId}_$currentRound",
-            text = text,
-            options = options,
-            correctAnswer = correctIndex,
-            timeLimit = QUESTION_TIME_LIMIT,
-            roundNumber = currentRound
-        )
-    }
-
-    /**
-     * Generate 4 multiple choice options for a math answer
-     * One is correct, three are plausible distractors
-     */
-    private fun generateMathOptions(correctAnswer: Int): List<String> {
-        val options = mutableSetOf<Int>()
-        options.add(correctAnswer)
-
-        // Generate plausible wrong answers
-        val range = when {
-            correctAnswer < 10 -> 3
-            correctAnswer < 100 -> 10
-            else -> 20
-        }
-
-        while (options.size < 4) {
-            val offset = Random.nextInt(-range, range + 1)
-            if (offset != 0) {
-                val wrongAnswer = correctAnswer + offset
-                if (wrongAnswer > 0) {
-                    options.add(wrongAnswer)
-                }
-            }
-        }
-
-        return options.shuffled().map { it.toString() }
-    }
-
     private var questionTimerJob: Job? = null
-
-    private fun startQuestionTimer() {
-        questionTimerJob?.cancel()
-        questionTimerJob = scope.launch {
-            for (remaining in QUESTION_TIME_LIMIT downTo 0) {
-                _duelState.value = _duelState.value.copy(timeRemaining = remaining)
-                delay(1000)
-
-                if (remaining == 0 && !_duelState.value.hasAnswered) {
-                    // Auto-submit timeout (incorrect answer)
-                    submitAnswer(-1)
-                }
-            }
-        }
-    }
 
     fun connectToServer() {
         _duelState.value = _duelState.value.copy(
@@ -459,24 +318,12 @@ class DuelRepository @Inject constructor(
         )
     }
 
-    fun submitAnswer(answerIndex: Int) {
+    fun submitAnswer(answer: String) {
         val question = _duelState.value.currentQuestion ?: return
         val user = currentUser ?: return
         val matchId = currentMatchId ?: return
 
-        if (_duelState.value.hasAnswered) {
-            Log.w(TAG, "Already answered this question")
-            return
-        }
-
-        val correct = answerIndex == question.correctAnswer
-        val scoreDelta = if (correct) 1 else 0
         val isFinal = currentRound >= totalRounds
-
-        _duelState.value = _duelState.value.copy(
-            selectedAnswer = answerIndex,
-            hasAnswered = true
-        )
 
         questionTimerJob?.cancel()
 
@@ -484,15 +331,15 @@ class DuelRepository @Inject constructor(
             match_id = matchId,
             player_id = user.id,
             question_id = question.id,
-            answer = if (answerIndex >= 0) question.options[answerIndex] else "TIMEOUT",
-            correct = correct,
-            score_delta = scoreDelta,
+            answer = answer,
+            correct = false,
+            score_delta = 1,
             final = isFinal,
             round_number = currentRound
         )
 
         webSocketService.sendMessage(WebSocketMessage.SubmitAnswer(data = answerData))
-        Log.d(TAG, "📤 Submitted answer: $answerIndex (${if (correct) "correct" else "incorrect"})")
+        Log.d(TAG, "📤 Submitted answer: $answer to question id: ${question.id}")
     }
 
     fun clearError() {

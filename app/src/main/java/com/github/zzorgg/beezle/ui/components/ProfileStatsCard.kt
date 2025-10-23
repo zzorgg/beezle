@@ -82,7 +82,7 @@ fun ProfileStatsCard(
                 )
                 StatItem(
                     icon = Icons.Default.QueryStats,
-                    label = "Level",
+                    label = "XP",
                     value = aggregatedLevel.toString(),
                     iconTint = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.fillMaxWidth(0.48f)
