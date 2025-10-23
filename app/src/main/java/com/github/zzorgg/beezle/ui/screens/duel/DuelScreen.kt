@@ -1,5 +1,6 @@
 package com.github.zzorgg.beezle.ui.screens.duel
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -93,9 +94,15 @@ fun DuelScreen(
             myId = viewModel.duelState.value.currentRoom?.player1?.id ?: "",
             onDismiss = {
                 viewModel.clearGameResult()
+                viewModel.disconnect()
                 onNavigateBack()
             }
         )
+    }
+
+    BackHandler {
+        viewModel.disconnect()
+        onNavigateBack()
     }
 
     Scaffold(
@@ -119,9 +126,7 @@ fun DuelScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = {
-                        if (duelState.isSearching) {
-                            viewModel.leaveQueue()
-                        }
+                        viewModel.disconnect()
                         onNavigateBack()
                     }) {
                         Icon(
@@ -152,7 +157,7 @@ fun DuelScreen(
                     duelState.isSearching -> {
                         // Searching for opponent
                         SearchingScreen(
-                            onCancel = viewModel::leaveQueue,
+                            onCancel = viewModel::disconnect,
                             queuePosition = duelState.queuePosition,
                             queueSince = duelState.queueSince
                         )
