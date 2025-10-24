@@ -1,6 +1,5 @@
 package com.github.zzorgg.beezle.ui.screens.onboarding.components
 
-import android.accounts.AccountManager
 import android.content.res.Configuration
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -16,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,7 +24,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.zzorgg.beezle.ui.components.GradientButton
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.data.wallet.WalletState
-import com.github.zzorgg.beezle.ui.screens.profile.NoGoogleAccountScreen
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 import java.util.Locale
@@ -38,25 +35,12 @@ fun WalletOnboardingScreenRoot(
 ) {
     val walletManager: SolanaWalletManager = viewModel()
     val walletState by walletManager.walletState.collectAsState()
-    val context = LocalContext.current
-    var showNoGoogleAccountDialog by remember { mutableStateOf(false) }
-
-    if (showNoGoogleAccountDialog) {
-        NoGoogleAccountScreen()
-        return
-    }
-
 
     WalletOnboardingScreen(
         walletState = walletState,
         connectPhantomWalletCallback = {
-            val accountManager = AccountManager.get(context)
-            val accounts = accountManager.getAccountsByType("com.google")
-            if (accounts.isEmpty()) {
-                showNoGoogleAccountDialog = true
-            } else {
-                walletManager.connectWallet(sender)
-            }
+            // Sign-in is required earlier in onboarding; do not gate by Google account checks here
+            walletManager.connectWallet(sender)
         },
         clearErrorCallback = { walletManager.clearError() },
         connectWalletCallback = { walletManager.connectWallet(sender) },

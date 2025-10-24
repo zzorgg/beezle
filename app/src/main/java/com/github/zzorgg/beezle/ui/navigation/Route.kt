@@ -17,6 +17,9 @@ sealed interface Route {
     data object Onboarding : Route
 
     @Serializable
+    data object OnboardingAuth : Route
+
+    @Serializable
     data object OnboardingWallet : Route
 
     @Serializable
