@@ -56,7 +56,8 @@ sealed class WebSocketMessage {
     @Serializable
     data class JoinQueueData(
         val player_id: String,
-        val display_name: String
+        val display_name: String,
+        val avatar_url: String,
     )
 
     @Serializable
@@ -71,6 +72,7 @@ sealed class WebSocketMessage {
         val player_id: String,
         val opponent_id: String,
         val opponent_name: String,
+        val opponent_avatar_url: String,
         val queue_delta_ms: Long? = null
     )
 
@@ -203,6 +205,7 @@ data class DuelState(
     val currentRound: Int = 0,
     val myScore: Int = 0,
     val lastAnswerCorrect: Boolean? = null,
+    val answerAttempt: Int = 0,
     val opponentScore: Int = 0,
     val opponentAnswered: Boolean = false
 )

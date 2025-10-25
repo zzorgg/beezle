@@ -154,7 +154,7 @@ fun DuelScreen(
                     duelState.isSearching -> {
                         // Searching for opponent
                         SearchingScreen(
-                            onCancel = viewModel::disconnect,
+                            onCancel = viewModel::leaveQueue,
                             queuePosition = duelState.queuePosition,
                             queueSince = duelState.queueSince
                         )

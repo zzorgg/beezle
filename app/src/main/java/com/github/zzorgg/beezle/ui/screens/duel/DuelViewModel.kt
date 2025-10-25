@@ -55,6 +55,5 @@ class DuelViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        disconnect()
     }
 }

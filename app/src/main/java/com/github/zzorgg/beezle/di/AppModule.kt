@@ -7,7 +7,6 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.github.zzorgg.beezle.data.local.LocalDataStoreRepository
 import com.github.zzorgg.beezle.data.remote.DuelWebSocketService
-import com.github.zzorgg.beezle.data.remote.FirebaseQuestionService
 import com.github.zzorgg.beezle.data.repository.AuthRepository
 import com.github.zzorgg.beezle.data.repository.DuelRepository
 import com.github.zzorgg.beezle.data.repository.FirebaseAuthRepository
@@ -68,9 +67,8 @@ class AppModule {
     fun provideDuelRepository(
         webSocketService: DuelWebSocketService,
         authRepository: AuthRepository,
-        firebaseQuestionService: FirebaseQuestionService,
     ): DuelRepository {
-        return DuelRepository(webSocketService, authRepository, firebaseQuestionService)
+        return DuelRepository(webSocketService, authRepository)
     }
 
 

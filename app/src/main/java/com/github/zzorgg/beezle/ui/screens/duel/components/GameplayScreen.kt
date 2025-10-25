@@ -74,7 +74,7 @@ fun GameplayScreen(
         answerInput = ""
     }
 
-    LaunchedEffect(duelState) {
+    LaunchedEffect(duelState.currentRound, duelState.answerAttempt) {
         if (duelState.lastAnswerCorrect == true) {
             view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
         } else if (duelState.lastAnswerCorrect == false) {
