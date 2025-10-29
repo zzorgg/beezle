@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
+import com.github.zzorgg.beezle.data.model.duel.ConnectionStatus
 import com.github.zzorgg.beezle.data.model.duel.DuelState
 import com.github.zzorgg.beezle.data.model.duel.Question
 import com.github.zzorgg.beezle.ui.screens.duel.components.gameplay.QuestionCard
@@ -287,6 +288,7 @@ private fun ScoreCard(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.R)
 @Preview(showBackground = true)
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
@@ -294,7 +296,7 @@ private fun GameplayScreenPreview() {
     BeezleTheme {
         GameplayScreen(
             duelState = DuelState(
-                isConnected = true,
+                connectionStatus = ConnectionStatus.CONNECTED,
                 currentQuestion = Question(
                     id = "wadsjkdmsna",
                     text = "Test question",

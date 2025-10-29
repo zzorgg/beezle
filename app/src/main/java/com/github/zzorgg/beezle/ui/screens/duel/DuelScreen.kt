@@ -55,6 +55,7 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
+import com.github.zzorgg.beezle.data.model.duel.ConnectionStatus
 import com.github.zzorgg.beezle.data.model.duel.DuelMode
 import com.github.zzorgg.beezle.ui.screens.duel.components.ConnectionStatusIndicator
 import com.github.zzorgg.beezle.ui.screens.duel.components.GameOverDialog
@@ -151,7 +152,7 @@ fun DuelScreen(
                         MatchFoundScreen(duelState = duelState)
                     }
 
-                    duelState.isSearching -> {
+                    duelState.isInQueue -> {
                         // Searching for opponent
                         SearchingScreen(
                             onCancel = viewModel::leaveQueue,
@@ -169,7 +170,7 @@ fun DuelScreen(
                                 // Username ignored; repository will use Firebase display name
                                 viewModel.startDuel("", selectedMode)
                             },
-                            isConnected = duelState.isConnected
+                            isConnected = duelState.connectionStatus == ConnectionStatus.CONNECTED
                         )
                     }
                 }

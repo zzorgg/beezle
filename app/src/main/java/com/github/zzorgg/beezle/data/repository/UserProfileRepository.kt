@@ -17,6 +17,8 @@ class UserProfileRepository @Inject constructor(
 
     fun getCurrentUid(): String? = authRepository.currentUser()?.uid
 
+    suspend fun getCurrentUserProfile(): UserProfile? = getProfile(authRepository.currentUser()?.uid)
+
     suspend fun getProfile(uid: String?): UserProfile? {
         if(uid == null) return null
         return try {

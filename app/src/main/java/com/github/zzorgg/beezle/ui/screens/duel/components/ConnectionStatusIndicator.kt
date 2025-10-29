@@ -25,7 +25,7 @@ import com.github.zzorgg.beezle.ui.theme.BeezleTheme
 fun ConnectionStatusIndicator(status: ConnectionStatus) {
     val dotColor = when (status) {
         ConnectionStatus.CONNECTED -> MaterialTheme.colorScheme.tertiary
-        ConnectionStatus.CONNECTING, ConnectionStatus.RECONNECTING -> MaterialTheme.colorScheme.secondary
+        ConnectionStatus.CONNECTING, ConnectionStatus.RECONNECTING, ConnectionStatus.DISCONNECTING -> MaterialTheme.colorScheme.secondary
         ConnectionStatus.DISCONNECTED, ConnectionStatus.ERROR -> MaterialTheme.colorScheme.error
     }
 

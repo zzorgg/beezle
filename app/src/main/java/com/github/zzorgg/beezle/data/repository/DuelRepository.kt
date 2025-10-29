@@ -9,15 +9,11 @@ import com.github.zzorgg.beezle.data.model.duel.DuelStatus
 import com.github.zzorgg.beezle.data.model.duel.DuelUser
 import com.github.zzorgg.beezle.data.model.duel.Question
 import com.github.zzorgg.beezle.data.model.duel.WebSocketMessage
-import com.github.zzorgg.beezle.data.remote.DuelWebSocketService
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import com.github.zzorgg.beezle.data.remote.PlaysockWebSocketService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,11 +21,9 @@ import kotlin.random.Random
 
 @Singleton
 class DuelRepository @Inject constructor(
-    private val webSocketService: DuelWebSocketService,
-    private val authRepository: AuthRepository,
+    private val webSocketService: PlaysockWebSocketService,
+    private val profileRepository: UserProfileRepository,
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
     private val _duelState = MutableStateFlow(DuelState())
     val duelState: StateFlow<DuelState> = _duelState.asStateFlow()
 
@@ -46,37 +40,27 @@ class DuelRepository @Inject constructor(
         private const val JOIN_QUEUE_DEBOUNCE_MS = 3000L
     }
 
-    init {
-        observeWebSocketMessages()
-        observeConnectionStatus()
-    }
+    suspend fun observeConnectionStatus() {
+        webSocketService.connectionStatus.collect { status ->
+            _duelState.value = _duelState.value.copy(
+                connectionStatus = status
+            )
 
-    private fun observeConnectionStatus() {
-        scope.launch {
-            webSocketService.isConnected.collect { isConnected ->
-                _duelState.value = _duelState.value.copy(
-                    isConnected = isConnected,
-                    connectionStatus = if (isConnected) ConnectionStatus.CONNECTED else ConnectionStatus.DISCONNECTED
-                )
-
-                if (!isConnected) {
-                    // Handle disconnection during match
-                    if (_duelState.value.currentRoom != null) {
-                        _duelState.value = _duelState.value.copy(
-                            error = "Connection lost. Attempting to reconnect..."
-                        )
-                    }
+            if (status != ConnectionStatus.CONNECTED) {
+                // Handle disconnection during match
+                if (_duelState.value.currentRoom != null) {
+                    _duelState.value = _duelState.value.copy(
+                        error = "Connection lost. Attempting to reconnect..."
+                    )
                 }
             }
         }
     }
 
-    private fun observeWebSocketMessages() {
-        scope.launch {
-            webSocketService.messages.collect { message ->
-                Log.d(TAG, "Processing message: ${message::class.simpleName}")
-                handleWebSocketMessage(message)
-            }
+    suspend fun observeWebSocketMessages() {
+        webSocketService.messages.collect { message ->
+            Log.d(TAG, "Processing message: ${message::class.simpleName}")
+            handleWebSocketMessage(message)
         }
     }
 
@@ -84,13 +68,14 @@ class DuelRepository @Inject constructor(
         when (message) {
             is WebSocketMessage.Queued -> {
                 Log.d(TAG, "✅ Queued at position: ${message.data.position}")
-                _duelState.value = _duelState.value.copy(
-                    isInQueue = true,
-                    isSearching = true,
-                    error = null,
-                    queuePosition = message.data.position,
-                    queueSince = _duelState.value.queueSince ?: System.currentTimeMillis()
-                )
+                _duelState.update {
+                    it.copy(
+                        isInQueue = true,
+                        error = null,
+                        queuePosition = message.data.position,
+                        queueSince = it.queueSince ?: System.currentTimeMillis()
+                    )
+                }
             }
 
             is WebSocketMessage.MatchFound -> {
@@ -116,17 +101,19 @@ class DuelRepository @Inject constructor(
                     status = DuelStatus.IN_PROGRESS
                 )
 
-                _duelState.value = _duelState.value.copy(
-                    isInQueue = false,
-                    isSearching = false,
-                    currentRoom = room,
-                    error = null,
-                    queuePosition = null,
-                    queueSince = null,
-                    myScore = 0,
-                    opponentScore = 0,
-                    currentRound = 0
-                )
+                _duelState.update {
+                    it.copy(
+                        isInQueue = false,
+                        currentRoom = room,
+                        error = null,
+                        queuePosition = null,
+                        queueSince = null,
+                        myScore = 0,
+                        opponentScore = 0,
+                        lastAnswerCorrect = null,
+                        currentRound = 0
+                    )
+                }
             }
 
             is WebSocketMessage.CurrentQuestion -> {
@@ -162,7 +149,10 @@ class DuelRepository @Inject constructor(
             }
 
             is WebSocketMessage.OpponentAnswer -> {
-                Log.d(TAG, "👤 Opponent answered: ${if (message.data.correct) "correct" else "incorrect"}")
+                Log.d(
+                    TAG,
+                    "👤 Opponent answered: ${if (message.data.correct) "correct" else "incorrect"}"
+                )
                 _duelState.value = _duelState.value.copy(
                     opponentAnswered = true
                 )
@@ -175,7 +165,6 @@ class DuelRepository @Inject constructor(
                     currentRoom = null,
                     currentQuestion = null,
                     isInQueue = false,
-                    isSearching = false,
                     queuePosition = null,
                     queueSince = null
                 )
@@ -188,7 +177,6 @@ class DuelRepository @Inject constructor(
                     currentRoom = null,
                     currentQuestion = null,
                     isInQueue = false,
-                    isSearching = false
                 )
             }
 
@@ -205,7 +193,6 @@ class DuelRepository @Inject constructor(
                 _duelState.value = _duelState.value.copy(
                     error = if (alreadyRegistered) null else message.data.message,
                     isInQueue = alreadyRegistered,
-                    isSearching = alreadyRegistered,
                 )
             }
 
@@ -215,7 +202,6 @@ class DuelRepository @Inject constructor(
         }
     }
 
-    private var questionTimerJob: Job? = null
 
     fun connectToServer() {
         _duelState.value = _duelState.value.copy(
@@ -226,20 +212,20 @@ class DuelRepository @Inject constructor(
     }
 
     fun disconnect() {
-        questionTimerJob?.cancel()
         webSocketService.disconnect()
         _duelState.value = DuelState()
         currentMatchId = null
         currentRound = 0
     }
 
-    fun startDuel(username: String, mode: DuelMode) {
-        // Use Firebase UID and display name when available
-        val fbUser = authRepository.currentUser()
-        val resolvedUsername = (fbUser?.displayName?.takeIf { it.isNotBlank() }
+    suspend fun startDuel(username: String, mode: DuelMode) {
+        if (_duelState.value.connectionStatus != ConnectionStatus.CONNECTED) return
+
+        val currentUserProfile = profileRepository.getCurrentUserProfile()
+        val resolvedUsername = (currentUserProfile?.username?.takeIf { it.isNotBlank() }
             ?: username.ifBlank { "Player" }).trim()
-        val resolvedId = fbUser?.uid ?: generateUserId()
-        val avatar = fbUser?.photoUrl?.toString()
+        val resolvedId = currentUserProfile?.uid ?: generateUserId()
+        val avatar = currentUserProfile?.avatarUrl
 
         val user = DuelUser(
             id = resolvedId,
@@ -251,38 +237,19 @@ class DuelRepository @Inject constructor(
 
         _duelState.update { it -> it.copy(selectedMode = mode) }
 
-        if (!_duelState.value.isConnected) {
-            connectToServer()
-            scope.launch {
-                // Wait for connection
-//                delay(2000)
-                if (_duelState.value.isConnected) {
-                    joinQueue(user)
-                } else {
-                    _duelState.value = _duelState.value.copy(
-                        error = "Failed to connect to server"
-                    )
-                }
-            }
-        } else {
-            joinQueue(user)
-        }
+        joinQueue(user)
     }
 
     private fun joinQueue(user: DuelUser) {
+        if (_duelState.value.connectionStatus != ConnectionStatus.CONNECTED) return
+
         val now = System.currentTimeMillis()
         if (now - lastJoinAttemptAt < JOIN_QUEUE_DEBOUNCE_MS) {
             Log.d(TAG, "⏱️ Skipping join_queue due to debounce")
             return
         }
 
-        if (!_duelState.value.isConnected) {
-            _duelState.value = _duelState.value.copy(
-                error = "Not connected to server"
-            )
-            return
-        }
-        if (_duelState.value.isInQueue || _duelState.value.isSearching) {
+        if (_duelState.value.isInQueue) {
             Log.d(TAG, "🚫 Already queued/searching, skipping join_queue")
             return
         }
@@ -292,7 +259,6 @@ class DuelRepository @Inject constructor(
         val queuedAt = System.currentTimeMillis()
         _duelState.value = _duelState.value.copy(
             isInQueue = true,
-            isSearching = true,
             error = null,
             queuePosition = null,
             queueSince = queuedAt
@@ -308,12 +274,12 @@ class DuelRepository @Inject constructor(
         Log.d(TAG, "📤 Sent join_queue for player: ${user.username}")
     }
 
-    fun leaveQueue() {
+    suspend fun leaveQueue() {
         lastJoinAttemptAt = 0L
         disconnect()
+        delay(1000L)
         _duelState.value = _duelState.value.copy(
             isInQueue = false,
-            isSearching = false,
             queuePosition = null,
             queueSince = null
         )
@@ -326,8 +292,6 @@ class DuelRepository @Inject constructor(
         val matchId = currentMatchId ?: return
 
         val isFinal = currentRound >= totalRounds
-
-        questionTimerJob?.cancel()
 
         val answerData = WebSocketMessage.SubmitAnswerData(
             match_id = matchId,

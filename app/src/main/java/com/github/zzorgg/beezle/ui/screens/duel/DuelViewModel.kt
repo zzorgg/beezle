@@ -17,8 +17,12 @@ class DuelViewModel @Inject constructor(
     private val duelRepository: DuelRepository,
     private val userProfileRepository: UserProfileRepository,
 ) : ViewModel() {
-
     val duelState: StateFlow<DuelState> = duelRepository.duelState
+
+    init {
+        viewModelScope.launch { duelRepository.observeConnectionStatus() }
+        viewModelScope.launch { duelRepository.observeWebSocketMessages() }
+    }
 
     fun getMyId() = userProfileRepository.getCurrentUid()
 
@@ -31,11 +35,15 @@ class DuelViewModel @Inject constructor(
     }
 
     fun startDuel(username: String, mode: DuelMode) {
-        duelRepository.startDuel(username, mode)
+        viewModelScope.launch {
+            duelRepository.startDuel(username, mode)
+        }
     }
 
     fun leaveQueue() {
-        duelRepository.leaveQueue()
+        viewModelScope.launch {
+            duelRepository.leaveQueue()
+        }
     }
 
     fun submitAnswer(answer: String) {
@@ -51,9 +59,5 @@ class DuelViewModel @Inject constructor(
 
     fun clearGameResult() {
         duelRepository.clearGameResult()
-    }
-
-    override fun onCleared() {
-        super.onCleared()
     }
 }

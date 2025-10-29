@@ -94,7 +94,7 @@ private fun WaitingForQuestionScreenPreview() {
     BeezleTheme {
         MatchFoundScreen(
             DuelState(
-                isConnected = true,
+                connectionStatus = ConnectionStatus.CONNECTED,
                 isInQueue = false,
                 currentRoom = DuelRoom(
                     id = "1234",
@@ -106,8 +106,6 @@ private fun WaitingForQuestionScreenPreview() {
                     text = "What is the what",
                 ),
                 error = null,
-                isSearching = false,
-                connectionStatus = ConnectionStatus.CONNECTED,
             )
         )
     }

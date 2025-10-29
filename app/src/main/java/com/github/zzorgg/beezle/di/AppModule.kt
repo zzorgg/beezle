@@ -6,10 +6,11 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.github.zzorgg.beezle.data.local.LocalDataStoreRepository
-import com.github.zzorgg.beezle.data.remote.DuelWebSocketService
+import com.github.zzorgg.beezle.data.remote.PlaysockWebSocketService
 import com.github.zzorgg.beezle.data.repository.AuthRepository
 import com.github.zzorgg.beezle.data.repository.DuelRepository
 import com.github.zzorgg.beezle.data.repository.FirebaseAuthRepository
+import com.github.zzorgg.beezle.data.repository.UserProfileRepository
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
@@ -58,17 +59,17 @@ class AppModule {
 
     @Provides
     @Singleton
-    fun provideDuelWebSocketService(): DuelWebSocketService {
-        return DuelWebSocketService()
+    fun provideDuelWebSocketService(): PlaysockWebSocketService {
+        return PlaysockWebSocketService()
     }
 
     @Provides
     @Singleton
     fun provideDuelRepository(
-        webSocketService: DuelWebSocketService,
-        authRepository: AuthRepository,
+        webSocketService: PlaysockWebSocketService,
+        userProfileRepository: UserProfileRepository,
     ): DuelRepository {
-        return DuelRepository(webSocketService, authRepository)
+        return DuelRepository(webSocketService, userProfileRepository)
     }
 
 

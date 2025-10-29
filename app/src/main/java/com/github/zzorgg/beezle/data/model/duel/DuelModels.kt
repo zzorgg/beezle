@@ -190,14 +190,12 @@ sealed class WebSocketMessage {
 }
 
 data class DuelState(
-    val isConnected: Boolean = false,
     val isInQueue: Boolean = false,
     val currentRoom: DuelRoom? = null,
     val currentQuestion: Question? = null,
     val timeRemaining: Int = 15,
     val lastGameResult: WebSocketMessage.GameOver? = null,
     val error: String? = null,
-    val isSearching: Boolean = false,
     val connectionStatus: ConnectionStatus = ConnectionStatus.DISCONNECTED,
     val queuePosition: Int? = null,
     val queueSince: Long? = null,
@@ -211,9 +209,10 @@ data class DuelState(
 )
 
 enum class ConnectionStatus {
-    DISCONNECTED,
     CONNECTING,
     CONNECTED,
+    RECONNECTING,
+    DISCONNECTING,
+    DISCONNECTED,
     ERROR,
-    RECONNECTING
 }
