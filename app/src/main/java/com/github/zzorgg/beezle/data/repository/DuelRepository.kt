@@ -122,10 +122,10 @@ class DuelRepository @Inject constructor(
                             id = message.data.question_id,
                             text = message.data.text,
                             roundNumber = message.data.round_number,
+                            options = message.data.options,
                         ),
                     )
                 }
-                Log.d(TAG, "HERE")
             }
 
             is WebSocketMessage.ScoreUpdate -> {
@@ -239,12 +239,12 @@ class DuelRepository @Inject constructor(
 
         currentUser = user
 
-        _duelState.update { it -> it.copy(selectedMode = mode) }
+        _duelState.update { it.copy(duelMode = mode) }
 
-        joinQueue(user)
+        joinQueue(user, mode)
     }
 
-    private fun joinQueue(user: DuelUser) {
+    private fun joinQueue(user: DuelUser, mode: DuelMode) {
         if (_duelState.value.connectionStatus != ConnectionStatus.CONNECTED) return
 
         val now = System.currentTimeMillis()
@@ -272,6 +272,7 @@ class DuelRepository @Inject constructor(
 
         val joinQueueData = WebSocketMessage.JoinQueueData(
             player_id = user.id,
+            duel_type = mode.name,
             display_name = user.username,
             avatar_url = user.avatarUrl ?: "",
         )

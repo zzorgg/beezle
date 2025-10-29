@@ -4,7 +4,13 @@ import android.content.res.Configuration
 import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.repeatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,6 +28,7 @@ import androidx.compose.material.icons.filled.KeyboardDoubleArrowRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,10 +41,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,6 +55,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.zzorgg.beezle.data.model.duel.ConnectionStatus
+import com.github.zzorgg.beezle.data.model.duel.DuelMode
 import com.github.zzorgg.beezle.data.model.duel.DuelState
 import com.github.zzorgg.beezle.data.model.duel.Question
 import com.github.zzorgg.beezle.ui.screens.duel.components.gameplay.QuestionCard
@@ -66,6 +77,7 @@ fun GameplayScreen(
         width = (view.measuredWidth / 3.5).toInt().toDp()
         width = if (view.measuredWidth == 0) 98.dp else width
     }
+    var shake by remember { mutableStateOf(false) }
 
     LaunchedEffect(question) {
         answerInput = ""
@@ -76,6 +88,7 @@ fun GameplayScreen(
             view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
         } else if (duelState.lastAnswerCorrect == false) {
             view.performHapticFeedback(HapticFeedbackConstants.REJECT)
+            shake = true
         }
     }
 
@@ -112,63 +125,129 @@ fun GameplayScreen(
             )
         }
 
-        QuestionCard(question = question)
+        QuestionCard(question = question, Modifier.shake(shake))
 
         Spacer(Modifier.weight(1f))
 
-        Column {
-            Row(
-                modifier = Modifier
-                    .background(
-                        MaterialTheme.colorScheme.surfaceContainerHigh,
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                    .fillMaxWidth(0.65f),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = answerInput.ifBlank { "Enter Answer" },
-                    style = if (answerInput.isNotBlank()) MaterialTheme.typography.displayMedium else MaterialTheme.typography.displaySmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(if (answerInput.isNotBlank()) 8.dp else 12.dp),
-                    textAlign = TextAlign.Center,
-                )
-                if (answerInput.isNotBlank()) {
-                    IconButton({
-                        answerInput = answerInput.substring(0, answerInput.length - 1)
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Backspace,
-                            contentDescription = "Backspace",
-                            modifier = Modifier.fillMaxSize(0.65f),
-                            tint = MaterialTheme.colorScheme.onSurface,
+        when (duelState.duelMode) {
+            DuelMode.MATH -> {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colorScheme.surfaceContainerHigh,
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .fillMaxWidth(0.65f),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = answerInput.ifBlank { "Enter Answer" },
+                            style = if (answerInput.isNotBlank()) MaterialTheme.typography.displayMedium else MaterialTheme.typography.displaySmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(if (answerInput.isNotBlank()) 8.dp else 12.dp),
+                            textAlign = TextAlign.Center,
                         )
+                        if (answerInput.isNotBlank()) {
+                            IconButton({
+                                answerInput = answerInput.substring(0, answerInput.length - 1)
+                            }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Backspace,
+                                    contentDescription = "Backspace",
+                                    modifier = Modifier.fillMaxSize(0.65f),
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
+                        }
                     }
                 }
+
+                Spacer(Modifier.height(16.dp))
+
+                MathButtonsRow(
+                    answerInputCallback = {
+                        answerInput = answerInput + it
+                        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                    },
+                    submitCallback = {
+                        if (answerInput.toIntOrNull() != null) {
+                            sendAnswerCallback(answerInput)
+                        } else {
+                            view.performHapticFeedback(HapticFeedbackConstants.REJECT)
+                        }
+                    },
+                    buttonWidth = width,
+                )
             }
-        }
 
-        Spacer(Modifier.height(16.dp))
-
-        MathButtonsRow(
-            answerInputCallback = {
-                answerInput = answerInput + it
-                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-            },
-            submitCallback = {
-                if (answerInput.toIntOrNull() != null) {
-                    sendAnswerCallback(answerInput)
-                } else {
-                    view.performHapticFeedback(HapticFeedbackConstants.REJECT)
+            DuelMode.CS -> {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    duelState.currentQuestion.options?.forEachIndexed { index, option ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    shape = CardDefaults.shape,
+                                )
+                                .clickable { sendAnswerCallback("${(65 + index).toChar()}") }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = "${(65 + index).toChar()}",
+                                    modifier = Modifier.padding(16.dp),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                                Text(
+                                    text = option,
+                                    modifier = Modifier.padding(16.dp),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(32.dp))
                 }
-            },
-            buttonWidth = width,
-        )
+            }
+
+            else -> {}
+        }
     }
 }
+
+// Ref: https://stackoverflow.com/a/73631379
+fun Modifier.shake(enabled: Boolean) = composed(
+
+    factory = {
+
+        val scale by animateFloatAsState(
+            targetValue = if (enabled) .9f else 1f,
+            animationSpec = repeatable(
+                iterations = 5,
+                animation = tween(durationMillis = 50, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            )
+        )
+
+        Modifier.graphicsLayer {
+            scaleX = if (enabled) scale else 1f
+            scaleY = if (enabled) scale else 1f
+        }
+    },
+    inspectorInfo = debugInspectorInfo {
+        name = "shake"
+        properties["enabled"] = enabled
+    }
+)
 
 @Composable
 private fun MathButtonsRow(
@@ -297,9 +376,37 @@ private fun GameplayScreenPreview() {
                     id = "wadsjkdmsna",
                     text = "Test question",
                     roundNumber = 3,
-                )
+                ),
+                duelMode = DuelMode.MATH,
             ),
-            sendAnswerCallback = {}
+            sendAnswerCallback = {},
+        )
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.R)
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun GameplayScreenCSPreview() {
+    BeezleTheme {
+        GameplayScreen(
+            duelState = DuelState(
+                connectionStatus = ConnectionStatus.CONNECTED,
+                currentQuestion = Question(
+                    id = "wadsjkdmsna",
+                    text = "Test question",
+                    roundNumber = 3,
+                    options = listOf(
+                        "Quick brown fox",
+                        "Quick brown fox",
+                        "Jumped the fox",
+                        "Jumped the fox",
+                    )
+                ),
+                duelMode = DuelMode.CS
+            ),
+            sendAnswerCallback = {},
         )
     }
 }

@@ -16,9 +16,9 @@ import com.github.zzorgg.beezle.data.model.duel.Question
 
 
 @Composable
-fun QuestionCard(question: Question) {
+fun QuestionCard(question: Question, modifier: Modifier = Modifier) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
     ) {
         Column(Modifier.padding(20.dp)) {
