@@ -23,8 +23,8 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun AuthPrompt(
     signingIn: Boolean,
+    onSignIn: () -> Unit,
     modifier: Modifier = Modifier,
-    onSignIn: () -> Unit
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier.fillMaxWidth()) {
         Text(
@@ -51,7 +51,7 @@ fun AuthPrompt(
 @Composable
 private fun AuthPromptPreview() {
     MaterialTheme {
-        AuthPrompt(true, modifier = Modifier.padding(top = 40.dp)) { }
+        AuthPrompt(true, {}, modifier = Modifier.padding(top = 40.dp))
     }
 }
 
@@ -60,6 +60,6 @@ private fun AuthPromptPreview() {
 @Composable
 private fun AuthPromptPreview2() {
     MaterialTheme {
-        AuthPrompt(false, modifier = Modifier.padding(top = 40.dp)) { }
+        AuthPrompt(false, {}, modifier = Modifier.padding(top = 40.dp))
     }
 }

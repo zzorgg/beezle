@@ -42,16 +42,14 @@ class DuelRepository @Inject constructor(
 
     suspend fun observeConnectionStatus() {
         webSocketService.connectionStatus.collect { status ->
-            _duelState.value = _duelState.value.copy(
-                connectionStatus = status
-            )
+            _duelState.update {
+                it.copy(connectionStatus = status)
+            }
 
             if (status != ConnectionStatus.CONNECTED) {
                 // Handle disconnection during match
                 if (_duelState.value.currentRoom != null) {
-                    _duelState.value = _duelState.value.copy(
-                        error = "Connection lost. Attempting to reconnect..."
-                    )
+                    _duelState.update { it.copy(error = "Connection lost. Attempting to reconnect...") }
                 }
             }
         }
@@ -153,31 +151,33 @@ class DuelRepository @Inject constructor(
                     TAG,
                     "👤 Opponent answered: ${if (message.data.correct) "correct" else "incorrect"}"
                 )
-                _duelState.value = _duelState.value.copy(
-                    opponentAnswered = true
-                )
+                _duelState.update { it.copy(opponentAnswered = true) }
             }
 
             is WebSocketMessage.GameOver -> {
                 Log.d(TAG, "🏁 Game over! Winner: ${message.data.winner_id}")
-                _duelState.value = _duelState.value.copy(
-                    lastGameResult = message,
-                    currentRoom = null,
-                    currentQuestion = null,
-                    isInQueue = false,
-                    queuePosition = null,
-                    queueSince = null
-                )
+                _duelState.update {
+                    it.copy(
+                        lastGameResult = message,
+                        currentRoom = null,
+                        currentQuestion = null,
+                        isInQueue = false,
+                        queuePosition = null,
+                        queueSince = null
+                    )
+                }
             }
 
             is WebSocketMessage.OpponentLeft -> {
                 Log.d(TAG, "🚪 Opponent left the match")
-                _duelState.value = _duelState.value.copy(
-                    error = "Opponent disconnected. You win by forfeit!",
-                    currentRoom = null,
-                    currentQuestion = null,
-                    isInQueue = false,
-                )
+                _duelState.update {
+                    it.copy(
+                        error = "Opponent disconnected. You win by forfeit!",
+                        currentRoom = null,
+                        currentQuestion = null,
+                        isInQueue = false,
+                    )
+                }
             }
 
             is WebSocketMessage.Error -> {
@@ -190,10 +190,12 @@ class DuelRepository @Inject constructor(
                     // Server may respond with this to periodic ping/no-op messages; don't surface to UI
                     return
                 }
-                _duelState.value = _duelState.value.copy(
-                    error = if (alreadyRegistered) null else message.data.message,
-                    isInQueue = alreadyRegistered,
-                )
+                _duelState.update {
+                    it.copy(
+                        error = if (alreadyRegistered) null else message.data.message,
+                        isInQueue = alreadyRegistered,
+                    )
+                }
             }
 
             else -> {
@@ -204,10 +206,12 @@ class DuelRepository @Inject constructor(
 
 
     fun connectToServer() {
-        _duelState.value = _duelState.value.copy(
-            connectionStatus = ConnectionStatus.CONNECTING,
-            error = null
-        )
+        _duelState.update {
+            it.copy(
+                connectionStatus = ConnectionStatus.CONNECTING,
+                error = null
+            )
+        }
         webSocketService.connect()
     }
 
@@ -257,12 +261,14 @@ class DuelRepository @Inject constructor(
         lastJoinAttemptAt = now
 
         val queuedAt = System.currentTimeMillis()
-        _duelState.value = _duelState.value.copy(
-            isInQueue = true,
-            error = null,
-            queuePosition = null,
-            queueSince = queuedAt
-        )
+        _duelState.update {
+            it.copy(
+                isInQueue = true,
+                error = null,
+                queuePosition = null,
+                queueSince = queuedAt
+            )
+        }
 
         val joinQueueData = WebSocketMessage.JoinQueueData(
             player_id = user.id,
@@ -278,11 +284,13 @@ class DuelRepository @Inject constructor(
         lastJoinAttemptAt = 0L
         disconnect()
         delay(1000L)
-        _duelState.value = _duelState.value.copy(
-            isInQueue = false,
-            queuePosition = null,
-            queueSince = null
-        )
+        _duelState.update {
+            it.copy(
+                isInQueue = false,
+                queuePosition = null,
+                queueSince = null
+            )
+        }
         connectToServer()
     }
 
@@ -309,11 +317,11 @@ class DuelRepository @Inject constructor(
     }
 
     fun clearError() {
-        _duelState.value = _duelState.value.copy(error = null)
+        _duelState.update { it.copy(error = null) }
     }
 
     fun clearGameResult() {
-        _duelState.value = _duelState.value.copy(lastGameResult = null)
+        _duelState.update { it.copy(lastGameResult = null) }
     }
 
     private fun generateUserId(): String {

@@ -29,6 +29,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,8 +41,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -59,14 +59,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -74,12 +71,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
+import coil.request.repeatCount
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.github.zzorgg.beezle.R
 import com.github.zzorgg.beezle.data.model.duel.DuelMode
+import com.github.zzorgg.beezle.data.model.profile.UserProfile
 import com.github.zzorgg.beezle.data.wallet.SolanaWalletManager
 import com.github.zzorgg.beezle.ui.components.BannerMedia
 import com.github.zzorgg.beezle.ui.components.BannerVideoPlayer
@@ -104,7 +103,7 @@ fun MainAppScreenRoot(
     val profileViewModel: ProfileViewModel = hiltViewModel()
     val profileViewState by profileViewModel.profileViewState.collectAsStateWithLifecycle()
     val profileDataState by profileViewModel.profileDataState.collectAsStateWithLifecycle()
-    
+
     val localData by homeViewModel.localData.collectAsStateWithLifecycle()
 
     LaunchedEffect(
@@ -152,7 +151,11 @@ fun MainAppScreen(
                 title = {
                     // Show the signed-in user's name when available
                     profileDataState.userProfile?.username?.let { username ->
-                        Text(text = username, style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text = username,
+                            modifier = Modifier.padding(start = 4.dp),
+                            style = MaterialTheme.typography.titleLarge,
+                        )
                     }
                 },
                 navigationIcon = {
@@ -273,7 +276,9 @@ fun MainAppScreen(
             val hasStats = profileDataState.userProfile != null
 
             if (hasStats) {
-                Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)) {
                     ProfileStatsCard(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -382,9 +387,13 @@ private fun LargeDuelCard(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val (title, chipColor, onChipColor) = when (mode) {
-        DuelMode.MATH -> Triple("Math Duel", MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary)
-        DuelMode.CS, DuelMode.GENERAL -> Triple("CS Duel", MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.onTertiary)
+//    val (title, chipColor, onChipColor) = when (mode) {
+//        DuelMode.MATH -> Triple("Math Duel", MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary)
+//        DuelMode.CS, DuelMode.GENERAL -> Triple("CS Duel", MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.onTertiary)
+//    }
+    val title = when (mode) {
+        DuelMode.MATH -> "Math Duel"
+        DuelMode.CS, DuelMode.GENERAL -> "CS Duel"
     }
     val punchline = when (mode) {
         DuelMode.MATH -> "Sharpen your mind with rapid-fire challenges"
@@ -400,13 +409,13 @@ private fun LargeDuelCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // Top media (GIF)
             MonochromeAsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(gifAsset)
                     .decoderFactory(
                         if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory()
                     )
+                    .repeatCount(0)
                     .build(),
                 contentDescription = "$title preview",
                 contentScale = ContentScale.Crop,
@@ -429,7 +438,6 @@ private fun LargeDuelCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Enhanced gradient title text
                     val gradient = if (mode == DuelMode.MATH) {
                         Brush.horizontalGradient(
                             colors = listOf(
@@ -447,19 +455,15 @@ private fun LargeDuelCard(
                             tileMode = TileMode.Clamp
                         )
                     }
-                    val styledTitle = buildAnnotatedString {
-                        withStyle(SpanStyle(brush = gradient)) {
-                            append(title.uppercase())
-                        }
-                    }
                     Text(
-                        text = styledTitle,
-                        style = MaterialTheme.typography.headlineMedium,
+                        text = title.uppercase(),
+                        style = MaterialTheme.typography.headlineMedium.copy(gradient),
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 0.6.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    /*
                     Button(
                         onClick = onClick,
                         colors = ButtonDefaults.buttonColors(
@@ -469,8 +473,8 @@ private fun LargeDuelCard(
                     ) {
                         Text(text = "Start Duel")
                     }
+                     */
                 }
-                // New punchline below the title + button
                 Text(
                     text = punchline,
                     style = MaterialTheme.typography.bodySmall,
@@ -495,7 +499,7 @@ fun MainAppScreenPreview() {
             navigateToRootCallback = { },
             navigateToTopLevelCallback = {},
             onWelcomeGifComplete = {},
-            profileDataState = ProfileDataState(),
+            profileDataState = ProfileDataState(userProfile = UserProfile(username = "Test")),
             showWelcomeGif = false,
         )
     }

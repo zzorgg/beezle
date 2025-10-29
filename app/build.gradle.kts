@@ -125,9 +125,6 @@ dependencies {
     // Google Fonts in Compose (optional)
     implementation(libs.androidx.compose.ui.text.google.fonts)
 
-    // Material Components for Android (provides Theme.Material3.* XML themes)
-    implementation(libs.material)
-
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)

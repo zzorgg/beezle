@@ -571,7 +571,7 @@ private fun ProfileScreenPreview() {
             dataState = ProfileDataState(),
             firebaseUser = null,
             walletState = WalletState(),
-            signInCallback = { },
+            signInCallback = {},
             signOutCallback = {},
             connectWalletCallback = {},
             linkWalletCallback = {},
