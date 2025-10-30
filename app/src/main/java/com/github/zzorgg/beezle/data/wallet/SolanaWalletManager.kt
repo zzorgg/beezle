@@ -16,13 +16,54 @@ import com.solana.mobilewalletadapter.clientlib.ConnectionIdentity
 import com.solana.mobilewalletadapter.clientlib.MobileWalletAdapter
 import com.solana.mobilewalletadapter.clientlib.TransactionResult
 import com.solana.mobilewalletadapter.common.signin.SignInWithSolana
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.concurrent.TimeUnit
 
 // DataStore delegate at file level
 private val Context.walletDataStore by preferencesDataStore(name = "wallet_prefs")
+
+// Lightweight Base58 encoder for Solana public keys
+private object Base58 {
+    private const val ALPHABET_STR = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+    private val ALPHABET = ALPHABET_STR.toCharArray()
+
+    fun encode(input: ByteArray): String {
+        if (input.isEmpty()) return ""
+        // Count leading zeros
+        var zeros = 0
+        while (zeros < input.size && input[zeros].toInt() == 0) zeros++
+        // Copy input since we are going to modify it in-place
+        val inputCopy = input.copyOf()
+        val encoded = StringBuilder()
+        var startAt = zeros
+        while (startAt < inputCopy.size) {
+            var carry = 0
+            for (i in startAt until inputCopy.size) {
+                val x = (inputCopy[i].toInt() and 0xFF)
+                val num = (carry shl 8) or x
+                inputCopy[i] = (num / 58).toByte()
+                carry = num % 58
+            }
+            encoded.append(ALPHABET[carry])
+            while (startAt < inputCopy.size && inputCopy[startAt].toInt() == 0) startAt++
+        }
+        repeat(zeros) { encoded.append('1') }
+        return encoded.reverse().toString()
+    }
+}
 
 data class WalletState(
     val isConnected: Boolean = false,
@@ -41,6 +82,16 @@ class SolanaWalletManager(application: Application) : AndroidViewModel(applicati
     val walletState: StateFlow<WalletState> = _walletState
 
     private lateinit var walletAdapter: MobileWalletAdapter
+
+    // Solana RPC
+    private val httpClient: OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
+        .build()
+    private val json = Json { ignoreUnknownKeys = true }
+    // Default to testnet endpoint; can be overridden via setRpcEndpoint()
+    private var rpcEndpoint = "https://api.testnet.solana.com"
 
     // DataStore keys
     private val DS_CONNECTED = booleanPreferencesKey("wallet_connected")
@@ -93,9 +144,11 @@ class SolanaWalletManager(application: Application) : AndroidViewModel(applicati
                     publicKey = prefs[DS_PUBLIC_KEY],
                     walletName = prefs[DS_WALLET_NAME],
                     authToken = prefs[DS_AUTH_TOKEN],
-                    balance = 1.25,
+                    balance = null,
                     wasRestored = true
                 )
+                // Fetch actual balance after restore
+                prefs[DS_PUBLIC_KEY]?.let { fetchBalance(it) }
             }
             connected
         } catch (e: Exception) {
@@ -119,10 +172,11 @@ class SolanaWalletManager(application: Application) : AndroidViewModel(applicati
                             publicKey = publicKey,
                             walletName = walletName,
                             authToken = authToken,
-                            balance = 1.25,
+                            balance = null,
                             wasRestored = true
                         )
                         Log.d(TAG, "Restored wallet from SharedPreferences fallback")
+                        publicKey?.let { fetchBalance(it) }
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to restore wallet state", e)
@@ -183,23 +237,24 @@ class SolanaWalletManager(application: Application) : AndroidViewModel(applicati
                 when (result) {
                     is TransactionResult.Success -> {
                         val authResult = result.authResult
-                        val publicKey = authResult.accounts.firstOrNull()?.publicKey
-                        val publicKeyString = publicKey?.let {
-                            try { it.joinToString("") { b -> "%02x".format(b) } } catch (e: Exception) { Log.e(TAG, "Error encoding public key", e); "Invalid Key" }
+                        // Prefer the first account returned by the wallet (the selected/authorized one)
+                        val account = authResult.accounts.firstOrNull()
+                        val pubKeyBase58 = account?.publicKey?.let { bytes ->
+                            try { Base58.encode(bytes) } catch (e: Exception) { Log.e(TAG, "Error base58 encoding public key", e); null }
                         }
                         val walletName = authResult.walletUriBase?.host ?: "Phantom"
                         val authToken = authResult.authToken
                         _walletState.value = _walletState.value.copy(
                             isConnected = true,
-                            publicKey = publicKeyString,
+                            publicKey = pubKeyBase58,
                             authToken = authToken,
                             walletName = walletName,
                             isLoading = false,
                             error = null,
                             wasRestored = false // This is a fresh connection, not a restore
                         )
-                        persistWithDataStore(true, publicKeyString, walletName, authToken)
-                        fetchBalance()
+                        persistWithDataStore(true, pubKeyBase58, walletName, authToken)
+                        pubKeyBase58?.let { fetchBalance(it) }
                     }
                     is TransactionResult.NoWalletFound -> {
                         _walletState.value = _walletState.value.copy(
@@ -241,22 +296,22 @@ class SolanaWalletManager(application: Application) : AndroidViewModel(applicati
                 when (result) {
                     is TransactionResult.Success -> {
                         val authResult = result.authResult
-                        val publicKey = authResult.accounts.firstOrNull()?.publicKey
-                        val publicKeyString = publicKey?.let {
-                            try { it.joinToString("") { b -> "%02x".format(b) } } catch (e: Exception) { Log.e(TAG, "Error encoding public key", e); "Invalid Key" }
+                        val account = authResult.accounts.firstOrNull()
+                        val pubKeyBase58 = account?.publicKey?.let { bytes ->
+                            try { Base58.encode(bytes) } catch (e: Exception) { Log.e(TAG, "Error base58 encoding public key", e); null }
                         }
                         val walletName = authResult.walletUriBase?.host ?: "Phantom"
                         val authToken = authResult.authToken
                         _walletState.value = _walletState.value.copy(
                             isConnected = true,
-                            publicKey = publicKeyString,
+                            publicKey = pubKeyBase58,
                             authToken = authToken,
                             walletName = walletName,
                             isLoading = false,
                             error = null
                         )
-                        persistWithDataStore(true, publicKeyString, walletName, authToken)
-                        fetchBalance()
+                        persistWithDataStore(true, pubKeyBase58, walletName, authToken)
+                        pubKeyBase58?.let { fetchBalance(it) }
                     }
                     is TransactionResult.NoWalletFound -> {
                         _walletState.value = _walletState.value.copy(
@@ -326,18 +381,52 @@ class SolanaWalletManager(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    private fun fetchBalance() {
+    private fun fetchBalance(address: String) {
         viewModelScope.launch {
             try {
-                // Placeholder balance
-                _walletState.value = _walletState.value.copy(balance = 1.25)
+                val sol = getSolBalance(address)
+                _walletState.value = _walletState.value.copy(balance = sol)
             } catch (e: Exception) {
                 Log.e(TAG, "Error fetching balance", e)
             }
         }
     }
 
+    private suspend fun getSolBalance(address: String): Double? = withContext(Dispatchers.IO) {
+        try {
+            val mediaType = "application/json".toMediaType()
+            val bodyString = "{" +
+                    "\"jsonrpc\":\"2.0\"," +
+                    "\"id\":1," +
+                    "\"method\":\"getBalance\"," +
+                    "\"params\":[\"$address\"]" +
+                    "}"
+            val request = Request.Builder()
+                .url(rpcEndpoint)
+                .post(bodyString.toRequestBody(mediaType))
+                .build()
+            httpClient.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) {
+                    Log.w(TAG, "RPC getBalance failed: HTTP ${'$'}{resp.code}")
+                    return@withContext null
+                }
+                val text = resp.body.string()
+                val root = json.parseToJsonElement(text).jsonObject
+                val resultObj = root["result"]?.jsonObject ?: return@withContext null
+                val value = resultObj["value"]?.jsonPrimitive?.longOrNull
+                return@withContext value?.let { it.toDouble() / 1_000_000_000.0 }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "RPC error", e)
+            null
+        }
+    }
+
     fun clearError() {
         _walletState.value = _walletState.value.copy(error = null)
+    }
+
+    fun setRpcEndpoint(url: String) {
+        rpcEndpoint = url
     }
 }
