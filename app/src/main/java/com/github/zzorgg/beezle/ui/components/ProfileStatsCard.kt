@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CurrencyBitcoin
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
@@ -37,7 +38,6 @@ import java.util.Locale
 fun ProfileStatsCard(
     userProfile: UserProfile?,
     modifier: Modifier = Modifier,
-    beezleCoins: Int = 0, // TODO: Add to UserProfile when implemented
     colors: CardColors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
 ) {
     val aggregatedLevel = userProfile?.let { (it.mathLevel + it.csLevel) / 2 }
@@ -80,9 +80,9 @@ fun ProfileStatsCard(
                     modifier = Modifier.fillMaxWidth(0.48f)
                 )
                 StatItem(
-                    icon = Icons.Default.CurrencyBitcoin,
-                    label = "Beezle Coins",
-                    value = beezleCoins.toString(),
+                    icon = Icons.Default.PlayArrow,
+                    label = "Total Duels",
+                    value = "0",
                     iconTint = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.fillMaxWidth(0.48f)
                 )

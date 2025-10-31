@@ -284,7 +284,6 @@ fun MainAppScreen(
                             .fillMaxWidth()
                             .alpha(if (lottieVisible) 0f else 1f),
                         userProfile = profileDataState.userProfile,
-                        beezleCoins = 0,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
                     )
                     if (lottieVisible) {

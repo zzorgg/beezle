@@ -27,7 +27,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -37,6 +36,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -138,6 +138,7 @@ fun ProfileScreenRoot(
                 },
                 signOutCallback = {
                     profileViewModel.signout()
+                    walletManager.disconnectWallet(sender)
                     // Reset flags so next sign-in will show tick again
                     signInInitiated.value = false
                     hasShownSignInTick.value = false
@@ -145,6 +146,7 @@ fun ProfileScreenRoot(
                 },
                 walletState = walletState,
                 connectWalletCallback = { walletManager.connectWallet(sender) },
+                disconnectWalletCallback = { walletManager.disconnectWallet(sender) },
                 linkWalletCallback = {
                     if (walletState.publicKey != null) {
                         profileViewModel.linkWallet(walletState.publicKey!!)
@@ -174,6 +176,7 @@ fun ProfileScreen(
     signInCallback: () -> Unit,
     signOutCallback: () -> Unit,
     connectWalletCallback: () -> Unit,
+    disconnectWalletCallback: () -> Unit,
     linkWalletCallback: () -> Unit,
     navigateBackCallback: () -> Unit,
     modifier: Modifier = Modifier,
@@ -286,6 +289,7 @@ fun ProfileScreen(
                                         profile = profile,
                                         walletState = walletState,
                                         connectWalletCallback = connectWalletCallback,
+                                        disconnectWalletCallback = disconnectWalletCallback,
                                         linkWalletCallback = linkWalletCallback
                                     )
                                     if (walletState.isConnected) {
@@ -355,6 +359,7 @@ private fun WalletCard(
     profile: UserProfile,
     walletState: WalletState,
     connectWalletCallback: () -> Unit,
+    disconnectWalletCallback: () -> Unit,
     linkWalletCallback: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -453,7 +458,7 @@ private fun WalletCard(
                             letterSpacing = 1.sp
                         )
                     }
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(8.dp))
 
                     // Main content row: Left info, Right GIF
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -485,39 +490,38 @@ private fun WalletCard(
                                     )
                                 }
                                 Spacer(Modifier.height(14.dp))
-                                // Copy chip (enabled only when connected+linked)
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Row(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(30))
-                                            .clickable {
-                                                clipboard?.setPrimaryClip(
-                                                    ClipData.newPlainText(
-                                                        "Wallet address",
-                                                        linkedAddress
-                                                    )
+                                Column(
+                                    modifier = Modifier
+                                        .clickable {
+                                            clipboard?.setPrimaryClip(
+                                                ClipData.newPlainText(
+                                                    "Wallet address",
+                                                    linkedAddress
                                                 )
-                                                copied = true
-                                            }
-                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                                            .padding(horizontal = 18.dp, vertical = 10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            Icons.Default.ContentCopy,
-                                            contentDescription = if (copied) "Copied" else "Copy wallet address",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(Modifier.width(6.dp))
-                                        Text(
-                                            if (copied) "Copied" else "Copy",
-                                            color = MaterialTheme.colorScheme.primary,
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    }
+                                            )
+                                            copied = true
+                                        }
+                                ) {
+                                    Text(
+                                        "Address",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 12.sp,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                    Spacer(Modifier.height(6.dp))
+                                    Text(
+                                        text = "${
+                                            linkedAddress.substring(
+                                                0,
+                                                4
+                                            )
+                                        }...${linkedAddress.substring(linkedAddress.length - 4)}",
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontSize = 26.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
                                 }
+                                Spacer(Modifier.height(14.dp))
                             } else {
                                 // Connected but not linked: suggest linking; no copy available
                                 Text(
@@ -555,6 +559,15 @@ private fun WalletCard(
                                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                         )
                     }
+
+                    if (isLinked) {
+                        OutlinedButton(
+                            onClick = disconnectWalletCallback,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Disconnect")
+                        }
+                    }
                 }
             }
         }
@@ -574,6 +587,7 @@ private fun ProfileScreenPreview() {
             signInCallback = {},
             signOutCallback = {},
             connectWalletCallback = {},
+            disconnectWalletCallback = {},
             linkWalletCallback = {},
             navigateBackCallback = {}
         )
@@ -602,6 +616,7 @@ private fun ProfileScreenPreview_SignedIn_Wallet_Disconnected() {
             signInCallback = { },
             signOutCallback = {},
             connectWalletCallback = {},
+            disconnectWalletCallback = {},
             linkWalletCallback = {},
             navigateBackCallback = {}
         )
@@ -634,6 +649,7 @@ private fun ProfileScreenPreview_SignedIn_Wallet_Connected() {
             signInCallback = { },
             signOutCallback = {},
             connectWalletCallback = {},
+            disconnectWalletCallback = {},
             linkWalletCallback = {},
             navigateBackCallback = {}
         )

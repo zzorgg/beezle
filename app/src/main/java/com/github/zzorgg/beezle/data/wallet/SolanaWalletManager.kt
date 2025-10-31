@@ -37,7 +37,7 @@ private val Context.walletDataStore by preferencesDataStore(name = "wallet_prefs
 
 // Lightweight Base58 encoder for Solana public keys
 private object Base58 {
-    private const val ALPHABET_STR = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+    private const val ALPHABET_STR = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
     private val ALPHABET = ALPHABET_STR.toCharArray()
 
     fun encode(input: ByteArray): String {
