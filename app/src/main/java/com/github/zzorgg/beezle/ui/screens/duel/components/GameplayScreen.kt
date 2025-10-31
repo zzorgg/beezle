@@ -60,6 +60,7 @@ import com.github.zzorgg.beezle.data.model.duel.DuelState
 import com.github.zzorgg.beezle.data.model.duel.Question
 import com.github.zzorgg.beezle.ui.screens.duel.components.gameplay.QuestionCard
 import com.github.zzorgg.beezle.ui.theme.BeezleTheme
+import kotlinx.coroutines.delay
 
 @RequiresApi(Build.VERSION_CODES.R)
 @Composable
@@ -81,6 +82,11 @@ fun GameplayScreen(
 
     LaunchedEffect(question) {
         answerInput = ""
+    }
+
+    LaunchedEffect(shake) {
+        delay(600L)
+        shake = false
     }
 
     LaunchedEffect(duelState.currentRound, duelState.answerAttempt) {
@@ -226,9 +232,7 @@ fun GameplayScreen(
 
 // Ref: https://stackoverflow.com/a/73631379
 fun Modifier.shake(enabled: Boolean) = composed(
-
     factory = {
-
         val scale by animateFloatAsState(
             targetValue = if (enabled) .9f else 1f,
             animationSpec = repeatable(
